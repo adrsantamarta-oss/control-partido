@@ -98,6 +98,13 @@
   .archivo-item{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--field); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; cursor:pointer; text-align:left;}
   .archivo-item .main{font-size:14px; font-weight:700;}
   .archivo-item .sub{font-size:11px; opacity:.5; margin-top:2px;}
+
+  .player-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border);}
+  .player-row:last-child{border-bottom:none;}
+  .player-num{font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0;}
+  .player-name{flex:1; font-size:14px; font-weight:600; min-width:0;}
+  .player-name.strike{text-decoration:line-through; opacity:.55;}
+  .sub-in{font-size:12px; font-weight:700; color:var(--green-ok); flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -128,11 +135,12 @@
   function tipoLabel(t){ return t==='amarilla'?'Amarilla': t==='roja'?'Roja':'2ª amarilla'; }
 
   let state = {
-    view: 'match', tab: 'cambios',
+    view: 'match', tab: 'alineacion',
     awayName: 'Rival', esLocal: true,
-    subs: [], cards: [], goals: [], rivalGoals: [],
+    roster: [], subs: [], cards: [], goals: [], rivalGoals: [],
     archivedMatches: [], openArchiveId: null,
   };
+  let alineacionForm = { numero: '', nombre: '' };
   let cambiosForm = { ventana: 'descanso', entra: '', sale: '' };
   let tarjetasForm = { dorsal: '', tipo: 'amarilla' };
   let golesForm = { dorsal: '' };
@@ -144,6 +152,7 @@
         const d = JSON.parse(raw);
         state.awayName = d.awayName ?? 'Rival';
         state.esLocal = d.esLocal ?? true;
+        state.roster = d.roster ?? [];
         state.subs = d.subs ?? [];
         state.cards = d.cards ?? [];
         state.goals = d.goals ?? [];
@@ -158,7 +167,7 @@
   function saveMatch(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        awayName: state.awayName, esLocal: state.esLocal,
+        awayName: state.awayName, esLocal: state.esLocal, roster: state.roster,
         subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals
       }));
     }catch(e){}
@@ -176,7 +185,7 @@
       if(!m){ state.view='archivo'; render(); return; }
       app.innerHTML = renderResumen({
         awayName: m.awayName, homeScore: m.homeScore, awayScore: m.awayScore, esLocal: m.esLocal ?? true,
-        subs: m.subs, cards: m.cards, goals: m.goals, rivalGoals: m.rivalGoals,
+        roster: m.roster ?? [], subs: m.subs, cards: m.cards, goals: m.goals, rivalGoals: m.rivalGoals,
         archivedLabel: `Guardado el ${m.dateLabel}`, showArchiveBtn:false
       });
       attachResumenEvents(false);
@@ -185,7 +194,7 @@
     if(state.view === 'resumen'){
       app.innerHTML = renderResumen({
         awayName: state.awayName, homeScore: state.goals.length, awayScore: state.rivalGoals.length, esLocal: state.esLocal,
-        subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
+        roster: state.roster, subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
         archivedLabel:null, showArchiveBtn:true
       });
       attachResumenEvents(true);
@@ -194,6 +203,7 @@
     app.innerHTML = renderHeader() + renderTabContent() + renderBottomNav();
     attachHeaderEvents();
     attachBottomNavEvents();
+    if(state.tab === 'alineacion') attachAlineacionEvents();
     if(state.tab === 'cambios') attachCambiosEvents();
     if(state.tab === 'tarjetas') attachTarjetasEvents();
     if(state.tab === 'goles') attachGolesEvents();
@@ -246,9 +256,85 @@
 
   // ---------- tabs dispatcher ----------
   function renderTabContent(){
+    if(state.tab==='alineacion') return renderAlineacionTab();
     if(state.tab==='cambios') return renderCambiosTab();
     if(state.tab==='tarjetas') return renderTarjetasTab();
     return renderGolesTab();
+  }
+
+  // ---------- Alineación ----------
+  function renderPlayerLine(p, salidas, roster, readOnly){
+    const rosterList = roster || state.roster;
+    const delBtn = readOnly ? '' : `<button class="del-btn" data-del-player="${p.id}">🗑</button>`;
+    const sub = salidas[p.numero];
+    if(!sub){
+      return `<div class="player-row">
+        <span class="player-num">${esc(p.numero)}</span>
+        <span class="player-name">${esc(p.nombre)}</span>
+        ${delBtn}
+      </div>`;
+    }
+    const entraPlayer = rosterList.find(r=>r.numero===sub.entra);
+    const entraLabel = entraPlayer ? esc(entraPlayer.nombre) : `Nº ${esc(sub.entra)}`;
+    return `<div class="player-row">
+      <span class="player-num">${esc(p.numero)}</span>
+      <span class="player-name strike">↓ ${esc(p.nombre)}</span>
+      <span class="sub-in">↑ ${entraLabel}</span>
+      ${delBtn}
+    </div>`;
+  }
+  function renderAlineacionList(){
+    if(state.roster.length===0) return `<div class="empty">Todavía no has añadido jugadores.</div>`;
+    const salidas = {};
+    state.subs.forEach(s=>{ salidas[s.sale] = s; });
+    const titulares = state.roster.slice(0,11);
+    const suplentes = state.roster.slice(11);
+    let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares</span></div>`;
+    html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false)).join('');
+    if(suplentes.length>0){
+      html += `<div class="group-divider">
+        <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes</span></div>
+        ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false)).join('')}
+      </div>`;
+    }
+    return html;
+  }
+  function renderAlineacionTab(){
+    return `
+    <div class="tab-content">
+      <div class="card">
+        <div class="field-row">
+          <div class="field" style="flex:0 0 4.5rem;"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="al-numero" value="${esc(alineacionForm.numero)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
+          <div class="field"><label>Nombre</label><input type="text" id="al-nombre" value="${esc(alineacionForm.nombre)}" placeholder="Nombre del jugador" maxlength="24" onfocus="this.select()"></div>
+        </div>
+        <button class="btn-primary" id="btn-add-jugador" disabled>+ Añadir jugador</button>
+      </div>
+      <p class="hint">Los 11 primeros que añadas serán los titulares; el resto, suplentes.</p>
+      <div id="alineacion-list">${renderAlineacionList()}</div>
+    </div>`;
+  }
+  function attachAlineacionEvents(){
+    const numero = document.getElementById('al-numero');
+    const nombre = document.getElementById('al-nombre');
+    const btnAdd = document.getElementById('btn-add-jugador');
+    function validate(){
+      alineacionForm.numero = numero.value; alineacionForm.nombre = nombre.value;
+      btnAdd.disabled = !(numero.value!=='' && nombre.value.trim()!=='');
+    }
+    numero.addEventListener('input', validate);
+    nombre.addEventListener('input', validate);
+    validate();
+    btnAdd.addEventListener('click', ()=>{
+      if(numero.value==='' || nombre.value.trim()==='') return;
+      state.roster.push({id:uid(), numero:numero.value, nombre:nombre.value.trim()});
+      saveMatch();
+      alineacionForm.numero=''; alineacionForm.nombre='';
+      render();
+    });
+    document.getElementById('alineacion-list').addEventListener('click',(e)=>{
+      const btn = e.target.closest('[data-del-player]');
+      if(btn){ state.roster = state.roster.filter(p=>p.id!==btn.dataset.delPlayer); saveMatch(); render(); }
+    });
   }
 
   // ---------- Cambios ----------
@@ -338,6 +424,7 @@
     }
     fEntra.addEventListener('input', validate);
     fSale.addEventListener('input', validate);
+    fMinuto.addEventListener('input', validate);
     validate();
 
     btnAdd.addEventListener('click', ()=>{
@@ -494,6 +581,7 @@
   // ---------- Bottom nav ----------
   function renderBottomNav(){
     const items = [
+      {key:'alineacion', label:'Alineación', icon:'👥', count: state.roster.length},
       {key:'cambios', label:'Cambios', icon:'⇄', count: state.subs.length},
       {key:'tarjetas', label:'Tarjetas', icon:'🟨', count: state.cards.length},
       {key:'goles', label:'Goles', icon:'⚽', count: state.goals.length + state.rivalGoals.length},
@@ -513,7 +601,12 @@
   }
 
   // ---------- Resumen ----------
-  function renderResumen({awayName, homeScore, awayScore, esLocal, subs, cards, goals, rivalGoals, archivedLabel, showArchiveBtn}){
+  function renderResumen({awayName, homeScore, awayScore, esLocal, roster, subs, cards, goals, rivalGoals, archivedLabel, showArchiveBtn}){
+    roster = roster || [];
+    const salidas = {};
+    subs.forEach(s=>{ salidas[s.sale] = s; });
+    const titulares = roster.slice(0,11);
+    const suplentes = roster.slice(11);
     const groups = VENTANAS.map(v=>({...v, items: subs.filter(s=>s.ventana===v.key).sort((a,b)=>Number(a.minuto)-Number(b.minuto))})).filter(g=>g.items.length>0);
     const sortedCards = [...cards].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
     const sortedGoals = [...goals].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
@@ -541,6 +634,16 @@
             <span class="side">${esc(rightName)}</span>
           </div>
           <div class="sublabel">${esc(HOME_NAME)} juega como ${esLocal?'local':'visitante'}</div>
+        </div>
+
+        <div class="section">
+          <h3>Alineación</h3>
+          ${roster.length===0? `<p class="empty-line">Sin alineación registrada.</p>` : `
+            <div class="list-box">
+              ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true)).join('')}
+              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true)).join('')}</div>` : ''}
+            </div>
+          `}
         </div>
 
         <div class="section">
@@ -601,15 +704,15 @@
         const nowIso = new Date().toISOString();
         state.archivedMatches.push({
           id: uid(), date: nowIso, dateLabel: formatDateLabel(nowIso),
-          awayName: state.awayName, esLocal: state.esLocal,
+          awayName: state.awayName, esLocal: state.esLocal, roster: state.roster,
           homeScore: state.goals.length, awayScore: state.rivalGoals.length,
           subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
         });
         saveArchive();
-        state.awayName = 'Rival'; state.esLocal = true;
+        state.awayName = 'Rival'; state.esLocal = true; state.roster = [];
         state.subs = []; state.cards = []; state.goals = []; state.rivalGoals = [];
         saveMatch();
-        state.tab = 'cambios';
+        state.tab = 'alineacion';
         state.view = 'match';
         render();
       });
