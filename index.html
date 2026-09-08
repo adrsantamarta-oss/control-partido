@@ -141,8 +141,8 @@
     archivedMatches: [], openArchiveId: null,
   };
   let alineacionForm = { numero: '', nombre: '' };
-  let cambiosForm = { ventana: 'descanso', entra: '', sale: '' };
-  let tarjetasForm = { dorsal: '', tipo: 'amarilla' };
+  let cambiosForm = { ventana: 'descanso', entra: '', sale: '', minuto: '' };
+  let tarjetasForm = { dorsal: '', tipo: 'amarilla', minuto: '' };
   let golesForm = { dorsal: '' };
 
   function loadState(){
@@ -368,7 +368,7 @@
           </div>
           <div class="field">
             <label>Minuto</label>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(locked!==undefined?locked:'')}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(locked!==undefined?locked:cambiosForm.minuto)}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}>
           </div>
         </div>
         <div class="field-error" id="err-mismo" style="margin-bottom:6px;"></div>
@@ -398,7 +398,6 @@
     document.querySelectorAll('.ventana-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         cambiosForm.ventana = btn.dataset.vkey;
-        cambiosForm.entra=''; cambiosForm.sale='';
         render();
       });
     });
@@ -419,7 +418,7 @@
       document.getElementById('err-mismo').textContent = mismoErr;
       const ok = entra!=='' && sale!=='' && minuto!=='' && !entraErr && !saleErr && !mismoErr;
       btnAdd.disabled = !ok;
-      cambiosForm.entra = entra; cambiosForm.sale = sale;
+      cambiosForm.entra = entra; cambiosForm.sale = sale; cambiosForm.minuto = minuto;
       return ok;
     }
     fEntra.addEventListener('input', validate);
@@ -431,7 +430,7 @@
       if(!validate()) return;
       state.subs.push({id:uid(), ventana:cambiosForm.ventana, entra:fEntra.value, sale:fSale.value, minuto:fMinuto.value});
       saveMatch();
-      cambiosForm.entra=''; cambiosForm.sale='';
+      cambiosForm.entra=''; cambiosForm.sale=''; cambiosForm.minuto='';
       render();
     });
     document.getElementById('cambios-list').addEventListener('click', (e)=>{
@@ -455,7 +454,7 @@
         <div class="type-row">${typeButtons}</div>
         <div class="field-row">
           <div class="field"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="t-dorsal" value="${esc(tarjetasForm.dorsal)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="t-minuto" value="" placeholder="—" maxlength="3" onfocus="this.select()"></div>
+          <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="t-minuto" value="${esc(tarjetasForm.minuto)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
         </div>
         <button class="btn-primary" id="btn-add-tarjeta" disabled>+ Registrar tarjeta</button>
       </div>
@@ -483,7 +482,7 @@
     const minuto = document.getElementById('t-minuto');
     const btnAdd = document.getElementById('btn-add-tarjeta');
     function validate(){
-      tarjetasForm.dorsal = dorsal.value;
+      tarjetasForm.dorsal = dorsal.value; tarjetasForm.minuto = minuto.value;
       btnAdd.disabled = !(dorsal.value!=='' && minuto.value!=='');
     }
     dorsal.addEventListener('input', validate);
@@ -493,7 +492,7 @@
       if(dorsal.value==='' || minuto.value==='') return;
       state.cards.push({id:uid(), dorsal:dorsal.value, tipo:tarjetasForm.tipo, minuto:minuto.value});
       saveMatch();
-      tarjetasForm.dorsal='';
+      tarjetasForm.dorsal=''; tarjetasForm.minuto='';
       render();
     });
     document.getElementById('tarjetas-list').addEventListener('click',(e)=>{
