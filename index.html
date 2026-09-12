@@ -105,6 +105,14 @@
   .player-name{flex:1; font-size:14px; font-weight:600; min-width:0;}
   .player-name.strike{text-decoration:line-through; opacity:.55;}
   .sub-in{font-size:12px; font-weight:700; color:var(--green-ok); flex-shrink:0;}
+  .player-num.editable, .player-name.editable{cursor:pointer;}
+  .player-num.editable{border-bottom:1px dashed var(--pitch-line);}
+  .player-name.editable:not(.strike){border-bottom:1px dashed var(--border);}
+  button.player-num{all:unset; font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0; cursor:pointer; border-bottom:1px dashed var(--amber);}
+  button.player-name{all:unset; flex:1; font-size:14px; font-weight:600; min-width:0; cursor:pointer; text-align:left; border-bottom:1px dashed var(--border);}
+  button.player-name.strike{text-decoration:line-through; opacity:.55;}
+  .inline-edit-num{width:3.2rem; font-family:'Courier New',monospace; font-weight:700; font-size:13px; text-align:center; padding:3px 4px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink); flex-shrink:0;}
+  .inline-edit-name{flex:1; min-width:0; font-size:14px; font-weight:600; padding:3px 6px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink);}
 </style>
 </head>
 <body>
@@ -141,6 +149,7 @@
     archivedMatches: [], openArchiveId: null,
   };
   let alineacionForm = { numero: '', nombre: '' };
+  let editingPlayer = null; // { id, field: 'num' | 'name' }
   let cambiosForm = { ventana: 'descanso', entra: '', sale: '', minuto: '' };
   let tarjetasForm = { dorsal: '', tipo: 'amarilla', minuto: '' };
   let golesForm = { dorsal: '' };
@@ -167,8 +176,8 @@
   function saveMatch(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        awayName: state.awayName, esLocal: state.esLocal, roster: state.roster,
-        subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals
+        awayName: state.awayName, esLocal: state.esLocal,
+        roster: state.roster, subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals
       }));
     }catch(e){}
   }
@@ -266,19 +275,35 @@
   function renderPlayerLine(p, salidas, roster, readOnly){
     const rosterList = roster || state.roster;
     const delBtn = readOnly ? '' : `<button class="del-btn" data-del-player="${p.id}">🗑</button>`;
+    const editingNum = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='num';
+    const editingName = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='name';
+
+    const numHtml = editingNum
+      ? `<input type="text" inputmode="numeric" pattern="[0-9]*" class="inline-edit-num" data-inline-num="${p.id}" value="${esc(p.numero)}" maxlength="3">`
+      : (readOnly
+          ? `<span class="player-num">${esc(p.numero)}</span>`
+          : `<button class="player-num" type="button" data-edit-num="${p.id}">${esc(p.numero)}</button>`);
+
+    function nameHtml(strike){
+      if(editingName) return `<input type="text" class="inline-edit-name" data-inline-name="${p.id}" value="${esc(p.nombre)}" maxlength="24">`;
+      const content = strike ? `↓ ${esc(p.nombre)}` : esc(p.nombre);
+      if(readOnly) return `<span class="player-name${strike?' strike':''}">${content}</span>`;
+      return `<button class="player-name${strike?' strike':''}" type="button" data-edit-name="${p.id}">${content}</button>`;
+    }
+
     const sub = salidas[p.numero];
     if(!sub){
       return `<div class="player-row">
-        <span class="player-num">${esc(p.numero)}</span>
-        <span class="player-name">${esc(p.nombre)}</span>
+        ${numHtml}
+        ${nameHtml(false)}
         ${delBtn}
       </div>`;
     }
     const entraPlayer = rosterList.find(r=>r.numero===sub.entra);
     const entraLabel = entraPlayer ? esc(entraPlayer.nombre) : `Nº ${esc(sub.entra)}`;
     return `<div class="player-row">
-      <span class="player-num">${esc(p.numero)}</span>
-      <span class="player-name strike">↓ ${esc(p.nombre)}</span>
+      ${numHtml}
+      ${nameHtml(true)}
       <span class="sub-in">↑ ${entraLabel}</span>
       ${delBtn}
     </div>`;
@@ -332,9 +357,46 @@
       render();
     });
     document.getElementById('alineacion-list').addEventListener('click',(e)=>{
-      const btn = e.target.closest('[data-del-player]');
-      if(btn){ state.roster = state.roster.filter(p=>p.id!==btn.dataset.delPlayer); saveMatch(); render(); }
+      const delBtn = e.target.closest('[data-del-player]');
+      if(delBtn){ state.roster = state.roster.filter(p=>p.id!==delBtn.dataset.delPlayer); saveMatch(); editingPlayer=null; render(); return; }
+      const numBtn = e.target.closest('[data-edit-num]');
+      if(numBtn){ editingPlayer = {id:numBtn.dataset.editNum, field:'num'}; render(); return; }
+      const nameBtn = e.target.closest('[data-edit-name]');
+      if(nameBtn){ editingPlayer = {id:nameBtn.dataset.editName, field:'name'}; render(); return; }
     });
+
+    if(editingPlayer){
+      const input = document.querySelector(`[data-inline-num="${editingPlayer.id}"], [data-inline-name="${editingPlayer.id}"]`);
+      if(input){
+        input.focus();
+        input.select();
+        const field = editingPlayer.field;
+        const playerId = editingPlayer.id;
+        let done = false;
+        const commit = ()=>{
+          if(done) return;
+          done = true;
+          const player = state.roster.find(p=>p.id===playerId);
+          if(player){
+            if(field==='num'){
+              const clean = input.value.replace(/[^0-9]/g,'').slice(0,3);
+              if(clean !== '') player.numero = clean;
+            } else {
+              const val = input.value.trim();
+              if(val !== '') player.nombre = val.slice(0,24);
+            }
+            saveMatch();
+          }
+          editingPlayer = null;
+          render();
+        };
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (e)=>{
+          if(e.key==='Enter'){ commit(); }
+          if(e.key==='Escape'){ done = true; editingPlayer = null; render(); }
+        });
+      }
+    }
   }
 
   // ---------- Cambios ----------
@@ -350,8 +412,10 @@
       <button class="ventana-btn" data-vkey="${v.key}" style="background:${v.soft};color:${v.color};border-color:${cambiosForm.ventana===v.key?v.color:'transparent'}">${v.short}</button>
     `).join('');
     const hint = locked!==undefined ? `<p class="hint">Esta ventana ya está fijada en el minuto ${locked}'</p>` : '';
+    const rosterHint = state.roster.length===0 ? `<p class="hint" style="color:var(--red);">Añade primero la alineación para poder registrar cambios.</p>` : '';
     return `
     <div class="tab-content">
+      ${rosterHint}
       <div class="card">
         <div class="ventana-row">${ventanaButtons}</div>
         <div id="ventana-hint">${hint}</div>
@@ -409,9 +473,23 @@
     function validate(){
       const entrados = new Set(state.subs.map(s=>s.entra));
       const salidos = new Set(state.subs.map(s=>s.sale));
+      const titularesNums = new Set(state.roster.slice(0,11).map(p=>p.numero));
+      const suplentesNums = new Set(state.roster.slice(11).map(p=>p.numero));
+      const rosterNums = new Set(state.roster.map(p=>p.numero));
       const entra = fEntra.value, sale = fSale.value, minuto = fMinuto.value;
-      const entraErr = entra!=='' && (entrados.has(entra)||salidos.has(entra)) ? 'Ya usado' : '';
-      const saleErr = sale!=='' && salidos.has(sale) ? 'Ya salió' : '';
+
+      let entraErr = '';
+      if(entra!==''){
+        if(!rosterNums.has(entra)) entraErr = 'No está en la alineación';
+        else if(titularesNums.has(entra)) entraErr = 'Un titular no puede entrar';
+        else if(entrados.has(entra) || salidos.has(entra)) entraErr = 'Ya usado';
+      }
+      let saleErr = '';
+      if(sale!==''){
+        if(!rosterNums.has(sale)) saleErr = 'No está en la alineación';
+        else if(salidos.has(sale)) saleErr = 'Ya salió';
+        else if(suplentesNums.has(sale) && !entrados.has(sale)) saleErr = 'Este suplente no ha entrado';
+      }
       const mismoErr = entra!=='' && sale!=='' && entra===sale ? 'No puede coincidir' : '';
       document.getElementById('err-entra').textContent = entraErr;
       document.getElementById('err-sale').textContent = saleErr;
@@ -595,7 +673,7 @@
   }
   function attachBottomNavEvents(){
     document.querySelectorAll('.nav-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ state.tab = btn.dataset.tab; render(); });
+      btn.addEventListener('click', ()=>{ state.tab = btn.dataset.tab; editingPlayer = null; render(); });
     });
   }
 
