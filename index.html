@@ -113,6 +113,10 @@
   button.player-name.strike{text-decoration:line-through; opacity:.55;}
   .inline-edit-num{width:3.2rem; font-family:'Courier New',monospace; font-weight:700; font-size:13px; text-align:center; padding:3px 4px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink); flex-shrink:0;}
   .inline-edit-name{flex:1; min-width:0; font-size:14px; font-weight:600; padding:3px 6px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink);}
+  .drag-handle{background:none; border:none; color:var(--ink); opacity:.4; font-size:16px; padding:2px 4px; cursor:pointer; flex-shrink:0; line-height:1;}
+  .player-row.dragging{background:var(--field); box-shadow:0 6px 14px rgba(0,0,0,.18); border-radius:8px; opacity:.95;}
+  .drag-handle{touch-action:none;}
+  .drop-indicator{height:3px; background:var(--amber); border-radius:2px; margin:2px 0;}
 </style>
 </head>
 <body>
@@ -122,6 +126,7 @@
   const HOME_NAME = "C.D. Raíces";
   const STORAGE_KEY = "partido-actual";
   const ARCHIVE_KEY = "partidos-archivados";
+  const PLANTILLA_KEY = "plantilla-jugadores";
   const VENTANAS = [
     { key: "descanso", short: "Descanso", label: "Descanso", color: "#E85D9E", soft: "#FBE1EE" },
     { key: "1", short: "V1", label: "Ventana 1", color: "#C6362F", soft: "#F6D9D7" },
@@ -144,13 +149,13 @@
 
   let state = {
     view: 'match', tab: 'alineacion',
-    awayName: 'Rival', esLocal: true,
+    awayName: 'Rival', esLocal: true, observaciones: '',
     roster: [], subs: [], cards: [], goals: [], rivalGoals: [],
-    archivedMatches: [], openArchiveId: null,
+    archivedMatches: [], openArchiveId: null, plantilla: [],
   };
   let alineacionForm = { numero: '', nombre: '' };
   let editingPlayer = null; // { id, field: 'num' | 'name' }
-  let cambiosForm = { ventana: 'descanso', entra: '', sale: '', minuto: '' };
+  let cambiosForm = { ventana: 'descanso', minuto: '', rows: [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}] };
   let tarjetasForm = { dorsal: '', tipo: 'amarilla', minuto: '' };
   let golesForm = { dorsal: '' };
 
@@ -161,6 +166,7 @@
         const d = JSON.parse(raw);
         state.awayName = d.awayName ?? 'Rival';
         state.esLocal = d.esLocal ?? true;
+        state.observaciones = d.observaciones ?? '';
         state.roster = d.roster ?? [];
         state.subs = d.subs ?? [];
         state.cards = d.cards ?? [];
@@ -172,17 +178,31 @@
       const raw2 = localStorage.getItem(ARCHIVE_KEY);
       if(raw2) state.archivedMatches = JSON.parse(raw2);
     }catch(e){}
+    try{
+      const raw3 = localStorage.getItem(PLANTILLA_KEY);
+      if(raw3) state.plantilla = JSON.parse(raw3);
+    }catch(e){}
+    seedRosterFromPlantilla();
   }
   function saveMatch(){
     try{
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        awayName: state.awayName, esLocal: state.esLocal,
+        awayName: state.awayName, esLocal: state.esLocal, observaciones: state.observaciones,
         roster: state.roster, subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals
       }));
     }catch(e){}
   }
   function saveArchive(){
     try{ localStorage.setItem(ARCHIVE_KEY, JSON.stringify(state.archivedMatches)); }catch(e){}
+  }
+  function savePlantilla(){
+    try{ localStorage.setItem(PLANTILLA_KEY, JSON.stringify(state.plantilla)); }catch(e){}
+  }
+  function seedRosterFromPlantilla(){
+    if(state.roster.length===0 && state.plantilla.length>0){
+      state.roster = state.plantilla.map(p=>({ id:p.id, numero:p.numero, nombre:p.nombre }));
+      saveMatch();
+    }
   }
 
   // ---------- router ----------
@@ -195,6 +215,7 @@
       app.innerHTML = renderResumen({
         awayName: m.awayName, homeScore: m.homeScore, awayScore: m.awayScore, esLocal: m.esLocal ?? true,
         roster: m.roster ?? [], subs: m.subs, cards: m.cards, goals: m.goals, rivalGoals: m.rivalGoals,
+        observaciones: m.observaciones ?? '',
         archivedLabel: `Guardado el ${m.dateLabel}`, showArchiveBtn:false
       });
       attachResumenEvents(false);
@@ -204,6 +225,7 @@
       app.innerHTML = renderResumen({
         awayName: state.awayName, homeScore: state.goals.length, awayScore: state.rivalGoals.length, esLocal: state.esLocal,
         roster: state.roster, subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
+        observaciones: state.observaciones,
         archivedLabel:null, showArchiveBtn:true
       });
       attachResumenEvents(true);
@@ -216,6 +238,7 @@
     if(state.tab === 'cambios') attachCambiosEvents();
     if(state.tab === 'tarjetas') attachTarjetasEvents();
     if(state.tab === 'goles') attachGolesEvents();
+    if(state.tab === 'observaciones') attachObservacionesEvents();
   }
 
   // ---------- header ----------
@@ -268,13 +291,15 @@
     if(state.tab==='alineacion') return renderAlineacionTab();
     if(state.tab==='cambios') return renderCambiosTab();
     if(state.tab==='tarjetas') return renderTarjetasTab();
-    return renderGolesTab();
+    if(state.tab==='goles') return renderGolesTab();
+    return renderObservacionesTab();
   }
 
   // ---------- Alineación ----------
-  function renderPlayerLine(p, salidas, roster, readOnly){
+  function renderPlayerLine(p, salidas, roster, readOnly, entradas){
     const rosterList = roster || state.roster;
     const delBtn = readOnly ? '' : `<button class="del-btn" data-del-player="${p.id}">🗑</button>`;
+    const handleBtn = readOnly ? '' : `<button class="drag-handle" type="button" data-drag="${p.id}">⠿</button>`;
     const editingNum = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='num';
     const editingName = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='name';
 
@@ -284,42 +309,53 @@
           ? `<span class="player-num">${esc(p.numero)}</span>`
           : `<button class="player-num" type="button" data-edit-num="${p.id}">${esc(p.numero)}</button>`);
 
-    function nameHtml(strike){
+    function nameHtml(prefix, strike, suffix){
       if(editingName) return `<input type="text" class="inline-edit-name" data-inline-name="${p.id}" value="${esc(p.nombre)}" maxlength="24">`;
-      const content = strike ? `↓ ${esc(p.nombre)}` : esc(p.nombre);
+      const content = `${prefix||''}${esc(p.nombre)}${suffix?` <span style="font-weight:400;opacity:.6;">${suffix}</span>`:''}`;
       if(readOnly) return `<span class="player-name${strike?' strike':''}">${content}</span>`;
       return `<button class="player-name${strike?' strike':''}" type="button" data-edit-name="${p.id}">${content}</button>`;
     }
 
     const sub = salidas[p.numero];
-    if(!sub){
-      return `<div class="player-row">
+    if(sub){
+      const entraPlayer = rosterList.find(r=>r.numero===sub.entra);
+      const entraLabel = entraPlayer ? esc(entraPlayer.nombre) : `Nº ${esc(sub.entra)}`;
+      return `<div class="player-row" data-player-id="${p.id}">
+        ${handleBtn}
         ${numHtml}
-        ${nameHtml(false)}
+        ${nameHtml('↓ ', true)}
+        <span class="sub-in">↑ ${entraLabel}</span>
         ${delBtn}
       </div>`;
     }
-    const entraPlayer = rosterList.find(r=>r.numero===sub.entra);
-    const entraLabel = entraPlayer ? esc(entraPlayer.nombre) : `Nº ${esc(sub.entra)}`;
-    return `<div class="player-row">
+    const cameOn = entradas ? entradas[p.numero] : null;
+    if(cameOn){
+      return `<div class="player-row" data-player-id="${p.id}">
+        ${handleBtn}
+        ${numHtml}
+        ${nameHtml('', true, `en el campo, min ${cameOn.minuto}'`)}
+        ${delBtn}
+      </div>`;
+    }
+    return `<div class="player-row" data-player-id="${p.id}">
+      ${handleBtn}
       ${numHtml}
-      ${nameHtml(true)}
-      <span class="sub-in">↑ ${entraLabel}</span>
+      ${nameHtml('', false)}
       ${delBtn}
     </div>`;
   }
   function renderAlineacionList(){
     if(state.roster.length===0) return `<div class="empty">Todavía no has añadido jugadores.</div>`;
-    const salidas = {};
-    state.subs.forEach(s=>{ salidas[s.sale] = s; });
+    const salidas = {}, entradas = {};
+    state.subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
     const titulares = state.roster.slice(0,11);
     const suplentes = state.roster.slice(11);
     let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares</span></div>`;
-    html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false)).join('');
+    html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('');
     if(suplentes.length>0){
       html += `<div class="group-divider">
         <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes</span></div>
-        ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false)).join('')}
+        ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
       </div>`;
     }
     return html;
@@ -334,36 +370,120 @@
         </div>
         <button class="btn-primary" id="btn-add-jugador" disabled>+ Añadir jugador</button>
       </div>
-      <p class="hint">Los 11 primeros que añadas serán los titulares; el resto, suplentes.</p>
+      <p class="hint">Los 11 primeros serán titulares; el resto, suplentes. Mantén pulsado ⠿ y desliza para reordenar.</p>
       <div id="alineacion-list">${renderAlineacionList()}</div>
     </div>`;
+  }
+  function attachAlineacionDrag(){
+    const listEl = document.getElementById('alineacion-list');
+    if(!listEl) return;
+    listEl.querySelectorAll('.drag-handle').forEach(handle=>{
+      handle.addEventListener('pointerdown', (e)=>{
+        e.preventDefault();
+        const row = handle.closest('.player-row');
+        if(!row) return;
+        const playerId = row.dataset.playerId;
+        handle.setPointerCapture(e.pointerId);
+
+        const rows = Array.from(listEl.querySelectorAll('.player-row[data-player-id]'));
+        const positions = rows.map(r=>{
+          const rect = r.getBoundingClientRect();
+          return { id: r.dataset.playerId, center: rect.top + rect.height/2 };
+        }).filter(p=>p.id!==playerId);
+
+        const rowRect = row.getBoundingClientRect();
+        const grabOffset = e.clientY - rowRect.top;
+        row.classList.add('dragging');
+
+        const indicatorEl = document.createElement('div');
+        indicatorEl.className = 'drop-indicator';
+
+        let targetIndex = 0;
+
+        function computeTargetIndex(y){
+          const floatCenter = y - grabOffset + rowRect.height/2;
+          for(let i=0;i<positions.length;i++){
+            if(floatCenter < positions[i].center) return i;
+          }
+          return positions.length;
+        }
+        function placeIndicator(idx){
+          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
+          const domOthers = rows.filter(r=>r.dataset.playerId!==playerId);
+          if(idx >= domOthers.length){
+            if(domOthers.length) domOthers[domOthers.length-1].after(indicatorEl);
+            else listEl.appendChild(indicatorEl);
+          } else {
+            domOthers[idx].before(indicatorEl);
+          }
+          targetIndex = idx;
+        }
+
+        placeIndicator(computeTargetIndex(e.clientY));
+
+        function onMove(ev){
+          row.style.transform = `translateY(${ev.clientY - grabOffset - rowRect.top}px)`;
+          placeIndicator(computeTargetIndex(ev.clientY));
+        }
+        function onUp(){
+          handle.releasePointerCapture(e.pointerId);
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          row.classList.remove('dragging');
+          row.style.transform = '';
+          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
+
+          const others = state.roster.filter(p=>p.id!==playerId);
+          const moving = state.roster.find(p=>p.id===playerId);
+          if(moving){
+            const idx = Math.max(0, Math.min(targetIndex, others.length));
+            others.splice(idx, 0, moving);
+            state.roster = others;
+            saveMatch();
+          }
+          render();
+        }
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+      });
+    });
   }
   function attachAlineacionEvents(){
     const numero = document.getElementById('al-numero');
     const nombre = document.getElementById('al-nombre');
     const btnAdd = document.getElementById('btn-add-jugador');
-    function validate(){
-      alineacionForm.numero = numero.value; alineacionForm.nombre = nombre.value;
-      btnAdd.disabled = !(numero.value!=='' && nombre.value.trim()!=='');
+    if(numero && nombre && btnAdd){
+      function validate(){
+        alineacionForm.numero = numero.value; alineacionForm.nombre = nombre.value;
+        btnAdd.disabled = !(numero.value!=='' && nombre.value.trim()!=='');
+      }
+      numero.addEventListener('input', validate);
+      nombre.addEventListener('input', validate);
+      validate();
+      btnAdd.addEventListener('click', ()=>{
+        if(numero.value==='' || nombre.value.trim()==='') return;
+        const newId = uid();
+        state.roster.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
+        state.plantilla.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
+        savePlantilla();
+        saveMatch();
+        alineacionForm.numero=''; alineacionForm.nombre='';
+        render();
+      });
     }
-    numero.addEventListener('input', validate);
-    nombre.addEventListener('input', validate);
-    validate();
-    btnAdd.addEventListener('click', ()=>{
-      if(numero.value==='' || nombre.value.trim()==='') return;
-      state.roster.push({id:uid(), numero:numero.value, nombre:nombre.value.trim()});
-      saveMatch();
-      alineacionForm.numero=''; alineacionForm.nombre='';
-      render();
-    });
     document.getElementById('alineacion-list').addEventListener('click',(e)=>{
       const delBtn = e.target.closest('[data-del-player]');
-      if(delBtn){ state.roster = state.roster.filter(p=>p.id!==delBtn.dataset.delPlayer); saveMatch(); editingPlayer=null; render(); return; }
+      if(delBtn){
+        state.roster = state.roster.filter(p=>p.id!==delBtn.dataset.delPlayer);
+        state.plantilla = state.plantilla.filter(p=>p.id!==delBtn.dataset.delPlayer);
+        savePlantilla(); saveMatch(); editingPlayer=null; render(); return;
+      }
       const numBtn = e.target.closest('[data-edit-num]');
       if(numBtn){ editingPlayer = {id:numBtn.dataset.editNum, field:'num'}; render(); return; }
       const nameBtn = e.target.closest('[data-edit-name]');
       if(nameBtn){ editingPlayer = {id:nameBtn.dataset.editName, field:'name'}; render(); return; }
     });
+    attachAlineacionDrag();
 
     if(editingPlayer){
       const input = document.querySelector(`[data-inline-num="${editingPlayer.id}"], [data-inline-name="${editingPlayer.id}"]`);
@@ -386,6 +506,8 @@
               if(val !== '') player.nombre = val.slice(0,24);
             }
             saveMatch();
+            const pl = state.plantilla.find(p=>p.id===playerId);
+            if(pl){ pl.numero = player.numero; pl.nombre = player.nombre; savePlantilla(); }
           }
           editingPlayer = null;
           render();
@@ -413,30 +535,34 @@
     `).join('');
     const hint = locked!==undefined ? `<p class="hint">Esta ventana ya está fijada en el minuto ${locked}'</p>` : '';
     const rosterHint = state.roster.length===0 ? `<p class="hint" style="color:var(--red);">Añade primero la alineación para poder registrar cambios.</p>` : '';
+    const minutoValue = locked!==undefined ? locked : cambiosForm.minuto;
+
+    const rowsHtml = cambiosForm.rows.map((row, i)=>`
+      <div class="field-row" style="margin-bottom:2px;">
+        <div class="field">
+          ${i===0?'<label>Entra</label>':''}
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="cambio-entra" data-row="${i}" value="${esc(row.entra)}" placeholder="—" maxlength="3" onfocus="this.select()">
+        </div>
+        <div class="field">
+          ${i===0?'<label>Sale</label>':''}
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="cambio-sale" data-row="${i}" value="${esc(row.sale)}" placeholder="—" maxlength="3" onfocus="this.select()">
+        </div>
+      </div>
+      <div class="field-error" id="err-row-${i}" style="margin-bottom:6px;"></div>
+    `).join('');
+
     return `
     <div class="tab-content">
       ${rosterHint}
       <div class="card">
         <div class="ventana-row">${ventanaButtons}</div>
         <div id="ventana-hint">${hint}</div>
-        <div class="field-row">
-          <div class="field">
-            <label>Entra</label>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" id="f-entra" value="${esc(cambiosForm.entra)}" placeholder="—" maxlength="3" onfocus="this.select()">
-            <div class="field-error" id="err-entra"></div>
-          </div>
-          <div class="field">
-            <label>Sale</label>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" id="f-sale" value="${esc(cambiosForm.sale)}" placeholder="—" maxlength="3" onfocus="this.select()">
-            <div class="field-error" id="err-sale"></div>
-          </div>
-          <div class="field">
-            <label>Minuto</label>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(locked!==undefined?locked:cambiosForm.minuto)}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}>
-          </div>
+        <div class="field-row" style="margin-bottom:10px;">
+          <div class="field" style="flex:0 0 6rem;"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(minutoValue)}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}></div>
+          <div class="field" style="justify-content:flex-end;"><span class="hint" style="margin:0;">Se aplica a los 3 cambios de abajo</span></div>
         </div>
-        <div class="field-error" id="err-mismo" style="margin-bottom:6px;"></div>
-        <button class="btn-primary" id="btn-add-cambio" disabled>+ Registrar cambio</button>
+        ${rowsHtml}
+        <button class="btn-primary" id="btn-add-cambio" disabled style="margin-top:4px;">+ Registrar cambios</button>
       </div>
       <div id="cambios-list">${renderCambiosList()}</div>
     </div>`;
@@ -465,50 +591,84 @@
         render();
       });
     });
-    const fEntra = document.getElementById('f-entra');
-    const fSale = document.getElementById('f-sale');
     const fMinuto = document.getElementById('f-minuto');
     const btnAdd = document.getElementById('btn-add-cambio');
+    const entraInputs = Array.from(document.querySelectorAll('.cambio-entra'));
+    const saleInputs = Array.from(document.querySelectorAll('.cambio-sale'));
 
-    function validate(){
+    function validateAll(){
       const entrados = new Set(state.subs.map(s=>s.entra));
       const salidos = new Set(state.subs.map(s=>s.sale));
       const titularesNums = new Set(state.roster.slice(0,11).map(p=>p.numero));
       const suplentesNums = new Set(state.roster.slice(11).map(p=>p.numero));
       const rosterNums = new Set(state.roster.map(p=>p.numero));
-      const entra = fEntra.value, sale = fSale.value, minuto = fMinuto.value;
+      const seenEntra = new Set(), seenSale = new Set();
+      let anyValid = false, allOk = true;
 
-      let entraErr = '';
-      if(entra!==''){
-        if(!rosterNums.has(entra)) entraErr = 'No está en la alineación';
-        else if(titularesNums.has(entra)) entraErr = 'Un titular no puede entrar';
-        else if(entrados.has(entra) || salidos.has(entra)) entraErr = 'Ya usado';
-      }
-      let saleErr = '';
-      if(sale!==''){
-        if(!rosterNums.has(sale)) saleErr = 'No está en la alineación';
-        else if(salidos.has(sale)) saleErr = 'Ya salió';
-        else if(suplentesNums.has(sale) && !entrados.has(sale)) saleErr = 'Este suplente no ha entrado';
-      }
-      const mismoErr = entra!=='' && sale!=='' && entra===sale ? 'No puede coincidir' : '';
-      document.getElementById('err-entra').textContent = entraErr;
-      document.getElementById('err-sale').textContent = saleErr;
-      document.getElementById('err-mismo').textContent = mismoErr;
-      const ok = entra!=='' && sale!=='' && minuto!=='' && !entraErr && !saleErr && !mismoErr;
+      cambiosForm.rows.forEach((row, i)=>{
+        const entra = row.entra, sale = row.sale;
+        let err = '';
+        if(entra==='' && sale===''){
+          // fila vacía, se ignora
+        } else if(entra==='' || sale===''){
+          err = 'Rellena entra y sale';
+        } else if(entra===sale){
+          err = 'No puede coincidir';
+        } else if(!rosterNums.has(entra)){
+          err = 'Entra: no está en la alineación';
+        } else if(titularesNums.has(entra)){
+          err = 'Entra: un titular no puede entrar';
+        } else if(entrados.has(entra) || salidos.has(entra) || seenEntra.has(entra)){
+          err = 'Entra: ya usado';
+        } else if(!rosterNums.has(sale)){
+          err = 'Sale: no está en la alineación';
+        } else if(salidos.has(sale) || seenSale.has(sale)){
+          err = 'Sale: ya salió';
+        } else if(suplentesNums.has(sale) && !entrados.has(sale)){
+          err = 'Sale: este suplente no ha entrado';
+        } else {
+          seenEntra.add(entra); seenSale.add(sale);
+          anyValid = true;
+        }
+        if(err) allOk = false;
+        const errEl = document.getElementById(`err-row-${i}`);
+        if(errEl) errEl.textContent = err;
+      });
+
+      const ok = anyValid && allOk && fMinuto.value !== '';
       btnAdd.disabled = !ok;
-      cambiosForm.entra = entra; cambiosForm.sale = sale; cambiosForm.minuto = minuto;
       return ok;
     }
-    fEntra.addEventListener('input', validate);
-    fSale.addEventListener('input', validate);
-    fMinuto.addEventListener('input', validate);
-    validate();
+
+    fMinuto.addEventListener('input', ()=>{ cambiosForm.minuto = fMinuto.value; validateAll(); });
+    entraInputs.forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        cambiosForm.rows[Number(inp.dataset.row)].entra = inp.value;
+        validateAll();
+      });
+    });
+    saleInputs.forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        cambiosForm.rows[Number(inp.dataset.row)].sale = inp.value;
+        validateAll();
+      });
+    });
+    validateAll();
 
     btnAdd.addEventListener('click', ()=>{
-      if(!validate()) return;
-      state.subs.push({id:uid(), ventana:cambiosForm.ventana, entra:fEntra.value, sale:fSale.value, minuto:fMinuto.value});
+      if(!validateAll()) return;
+      const minuto = fMinuto.value;
+      let added = 0;
+      cambiosForm.rows.forEach(row=>{
+        if(row.entra!=='' && row.sale!==''){
+          state.subs.push({id:uid(), ventana:cambiosForm.ventana, entra:row.entra, sale:row.sale, minuto});
+          added++;
+        }
+      });
+      if(added===0) return;
       saveMatch();
-      cambiosForm.entra=''; cambiosForm.sale=''; cambiosForm.minuto='';
+      cambiosForm.rows = [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}];
+      cambiosForm.minuto = '';
       render();
     });
     document.getElementById('cambios-list').addEventListener('click', (e)=>{
@@ -662,6 +822,7 @@
       {key:'cambios', label:'Cambios', icon:'⇄', count: state.subs.length},
       {key:'tarjetas', label:'Tarjetas', icon:'🟨', count: state.cards.length},
       {key:'goles', label:'Goles', icon:'⚽', count: state.goals.length + state.rivalGoals.length},
+      {key:'observaciones', label:'Notas', icon:'📝', count: state.observaciones.trim()!==''?1:0},
     ];
     return `<div class="bottom-nav">${items.map(it=>`
       <button class="nav-btn ${state.tab===it.key?'active':''}" data-tab="${it.key}">
@@ -677,11 +838,27 @@
     });
   }
 
+  // ---------- Observaciones ----------
+  function renderObservacionesTab(){
+    return `
+    <div class="tab-content">
+      <div class="card">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;display:block;margin-bottom:8px;">📝 Observaciones del partido</span>
+        <textarea id="obs-text" placeholder="Lesiones, incidencias, decisiones arbitrales raras, lo que quieras anotar..." style="width:100%; min-height:180px; border:1px solid var(--border); background:var(--field); border-radius:8px; padding:10px; font-size:14px; font-family:inherit; color:var(--ink); resize:vertical;">${esc(state.observaciones)}</textarea>
+      </div>
+    </div>`;
+  }
+  function attachObservacionesEvents(){
+    const txt = document.getElementById('obs-text');
+    txt.addEventListener('input', ()=>{ state.observaciones = txt.value; });
+    txt.addEventListener('blur', ()=>{ saveMatch(); });
+  }
+
   // ---------- Resumen ----------
-  function renderResumen({awayName, homeScore, awayScore, esLocal, roster, subs, cards, goals, rivalGoals, archivedLabel, showArchiveBtn}){
+  function renderResumen({awayName, homeScore, awayScore, esLocal, roster, subs, cards, goals, rivalGoals, observaciones, archivedLabel, showArchiveBtn}){
     roster = roster || [];
-    const salidas = {};
-    subs.forEach(s=>{ salidas[s.sale] = s; });
+    const salidas = {}, entradas = {};
+    subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
     const titulares = roster.slice(0,11);
     const suplentes = roster.slice(11);
     const groups = VENTANAS.map(v=>({...v, items: subs.filter(s=>s.ventana===v.key).sort((a,b)=>Number(a.minuto)-Number(b.minuto))})).filter(g=>g.items.length>0);
@@ -717,8 +894,8 @@
           <h3>Alineación</h3>
           ${roster.length===0? `<p class="empty-line">Sin alineación registrada.</p>` : `
             <div class="list-box">
-              ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true)).join('')}
-              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true)).join('')}</div>` : ''}
+              ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}
+              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
             </div>
           `}
         </div>
@@ -766,6 +943,13 @@
           `}
         </div>
 
+        <div class="section">
+          <h3>Observaciones</h3>
+          ${(!observaciones || observaciones.trim()==='')? `<p class="empty-line">Sin observaciones.</p>` : `
+            <div class="list-box"><div style="white-space:pre-wrap;">${esc(observaciones)}</div></div>
+          `}
+        </div>
+
         ${showArchiveBtn? `<button class="archive-btn" id="btn-archive-match">🗂 Archivar partido</button>`:''}
       </div>
     </div>`;
@@ -781,13 +965,20 @@
         const nowIso = new Date().toISOString();
         state.archivedMatches.push({
           id: uid(), date: nowIso, dateLabel: formatDateLabel(nowIso),
-          awayName: state.awayName, esLocal: state.esLocal, roster: state.roster,
+          awayName: state.awayName, esLocal: state.esLocal, roster: state.roster, observaciones: state.observaciones,
           homeScore: state.goals.length, awayScore: state.rivalGoals.length,
           subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
         });
         saveArchive();
-        state.awayName = 'Rival'; state.esLocal = true; state.roster = [];
+        // guarda en la plantilla el orden y los datos finales de este partido
+        const rosterIds = new Set(state.roster.map(p=>p.id));
+        const reordered = state.roster.map(p=>({ id:p.id, numero:p.numero, nombre:p.nombre }));
+        const missing = state.plantilla.filter(pl=>!rosterIds.has(pl.id));
+        state.plantilla = [...reordered, ...missing];
+        savePlantilla();
+        state.awayName = 'Rival'; state.esLocal = true; state.roster = []; state.observaciones = '';
         state.subs = []; state.cards = []; state.goals = []; state.rivalGoals = [];
+        seedRosterFromPlantilla();
         saveMatch();
         state.tab = 'alineacion';
         state.view = 'match';
