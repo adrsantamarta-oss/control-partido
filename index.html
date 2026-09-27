@@ -349,13 +349,20 @@
     const salidas = {}, entradas = {};
     state.subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
     const titulares = state.roster.slice(0,11);
-    const suplentes = state.roster.slice(11);
-    let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares</span></div>`;
+    const suplentes = state.roster.slice(11,18);
+    const noConvocados = state.roster.slice(18);
+    let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares (${titulares.length}/11)</span></div>`;
     html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('');
     if(suplentes.length>0){
       html += `<div class="group-divider">
-        <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes</span></div>
+        <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes (${suplentes.length}/7)</span></div>
         ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
+      </div>`;
+    }
+    if(noConvocados.length>0){
+      html += `<div class="group-divider">
+        <div class="group-header"><span class="group-label" style="color:var(--ink); opacity:.45;">No convocados</span></div>
+        ${noConvocados.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
       </div>`;
     }
     return html;
@@ -370,7 +377,7 @@
         </div>
         <button class="btn-primary" id="btn-add-jugador" disabled>+ Añadir jugador</button>
       </div>
-      <p class="hint">Los 11 primeros serán titulares; el resto, suplentes. Mantén pulsado ⠿ y desliza para reordenar.</p>
+      <p class="hint">Los 11 primeros son titulares, los 7 siguientes suplentes (puede haber menos), y el resto queda como no convocados. Mantén pulsado ⠿ y desliza para reordenar.</p>
       <div id="alineacion-list">${renderAlineacionList()}</div>
     </div>`;
   }
@@ -600,8 +607,8 @@
       const entrados = new Set(state.subs.map(s=>s.entra));
       const salidos = new Set(state.subs.map(s=>s.sale));
       const titularesNums = new Set(state.roster.slice(0,11).map(p=>p.numero));
-      const suplentesNums = new Set(state.roster.slice(11).map(p=>p.numero));
-      const rosterNums = new Set(state.roster.map(p=>p.numero));
+      const suplentesNums = new Set(state.roster.slice(11,18).map(p=>p.numero));
+      const convocadosNums = new Set([...titularesNums, ...suplentesNums]);
       const seenEntra = new Set(), seenSale = new Set();
       let anyValid = false, allOk = true;
 
@@ -614,14 +621,14 @@
           err = 'Rellena entra y sale';
         } else if(entra===sale){
           err = 'No puede coincidir';
-        } else if(!rosterNums.has(entra)){
-          err = 'Entra: no está en la alineación';
+        } else if(!convocadosNums.has(entra)){
+          err = 'Entra: no está convocado';
         } else if(titularesNums.has(entra)){
           err = 'Entra: un titular no puede entrar';
         } else if(entrados.has(entra) || salidos.has(entra) || seenEntra.has(entra)){
           err = 'Entra: ya usado';
-        } else if(!rosterNums.has(sale)){
-          err = 'Sale: no está en la alineación';
+        } else if(!convocadosNums.has(sale)){
+          err = 'Sale: no está convocado';
         } else if(salidos.has(sale) || seenSale.has(sale)){
           err = 'Sale: ya salió';
         } else if(suplentesNums.has(sale) && !entrados.has(sale)){
@@ -860,7 +867,8 @@
     const salidas = {}, entradas = {};
     subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
     const titulares = roster.slice(0,11);
-    const suplentes = roster.slice(11);
+    const suplentes = roster.slice(11,18);
+    const noConvocados = roster.slice(18);
     const groups = VENTANAS.map(v=>({...v, items: subs.filter(s=>s.ventana===v.key).sort((a,b)=>Number(a.minuto)-Number(b.minuto))})).filter(g=>g.items.length>0);
     const sortedCards = [...cards].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
     const sortedGoals = [...goals].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
@@ -896,6 +904,7 @@
             <div class="list-box">
               ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}
               ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
+              ${noConvocados.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;opacity:.6;">${noConvocados.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
             </div>
           `}
         </div>
