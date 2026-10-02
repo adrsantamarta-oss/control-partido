@@ -1,400 +1,126 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1E3A8A">
 <title>Control de Partido — C.D. Raíces</title>
 <link rel="icon" href="data:,">
 <style>
   :root{
-    /* Paleta azul clara moderna */
-    --navy:#1E3A8A;        /* azul marino profundo */
-    --navy-dark:#172554;   /* aún más oscuro */
-    --blue:#2563EB;        /* azul principal */
-    --blue-light:#3B82F6;  /* azul claro */
-    --blue-soft:#DBEAFE;   /* fondo azul suave */
-    --blue-bg:#EFF6FF;     /* fondo azul muy suave */
-    --sky:#60A5FA;         /* celeste acento */
-
-    --chalk:#FFFFFF;       /* fondo principal */
-    --ink:#0F172A;         /* texto principal */
-    --muted:#64748B;       /* texto secundario */
-    --border:#E2E8F0;      /* bordes suaves */
-    --field:#F1F5F9;       /* fondo de inputs */
-    --amber:#F59E0B;       /* marcador */
-    --red:#DC2626;         /* roja / borrar */
-    --green-ok:#059669;    /* entradas */
-
-    --radius:16px; --radius-sm:10px;
-    --shadow-sm:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
-    --shadow:0 4px 16px rgba(15,23,42,.08);
-    --shadow-lg:0 10px 30px rgba(15,23,42,.12);
-    --transition:all .22s cubic-bezier(.4,0,.2,1);
+    --pitch:#0B3D2E; --pitch-line:#1B5E3F; --chalk:#F5F3EC; --ink:#12201A;
+    --amber:#F2B705; --red:#C6362F; --rival:#5B6B6B; --border:#D8D2C0; --field:#EFEBDF;
+    --green-ok:#1E8E3E;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
-  body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:var(--blue-bg); color:var(--ink); overscroll-behavior:none;
-    -webkit-font-smoothing:antialiased;
-  }
-  #app{max-width:480px; margin:0 auto; min-height:100vh; background:var(--chalk); position:relative; padding-bottom:78px; box-shadow:0 0 40px rgba(15,23,42,.06);}
-
-  /* ---------- HEADER ---------- */
-  .header{
-    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%);
-    padding:16px 16px 14px; position:sticky; top:0; z-index:20;
-    box-shadow:0 6px 20px rgba(15,23,42,.2);
-    border-bottom-left-radius:20px; border-bottom-right-radius:20px;
-  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--chalk); color:var(--ink);}
+  #app{max-width:480px; margin:0 auto; min-height:100vh; background:var(--chalk); position:relative; padding-bottom:70px;}
+  .header{background:var(--pitch); padding:12px 16px 10px; position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(0,0,0,.2);}
   .score-row{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .team-name{
-    flex:1; min-width:0; font-size:15px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.04em; color:var(--chalk); white-space:nowrap; overflow:hidden;
-    text-overflow:ellipsis; display:block;
-  }
+  .team-name{flex:1; min-width:0; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--chalk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;}
   .team-name.right{text-align:right;}
-  .score-box{
-    display:flex; align-items:baseline; gap:6px; background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.2); border-radius:14px;
-    padding:5px 16px; flex-shrink:0; backdrop-filter:blur(8px);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
-  }
-  .score-num{font-family:'SF Mono','Courier New',monospace; font-size:28px; font-weight:800; line-height:1;}
+  .score-box{display:flex; align-items:baseline; gap:4px; background:#08281D; border:1px solid var(--pitch-line); border-radius:6px; padding:2px 12px; flex-shrink:0;}
+  .score-num{font-family:'Courier New',monospace; font-size:24px; font-weight:800;}
   .score-num.amber{color:var(--amber);}
-  .score-num.chalk{color:#fff;}
-  .score-dash{color:#fff; opacity:.35; font-size:18px; font-weight:700;}
-  .edit-btn{
-    display:flex; align-items:center; gap:5px; background:none; border:none;
-    color:#fff; font-size:15px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.04em; cursor:pointer; padding:0; max-width:100%;
-  }
-  .edit-btn .name{
-    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    max-width:6.5rem; display:inline-block;
-  }
-  .edit-btn .pencil{font-size:12px; opacity:.55;}
+  .score-num.chalk{color:var(--chalk);}
+  .score-dash{color:var(--chalk); opacity:.4; font-size:16px; font-weight:700;}
+  .edit-btn{display:flex; align-items:center; gap:4px; background:none; border:none; color:var(--chalk); font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; padding:0; max-width:100%;}
+  .edit-btn span.name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:6.5rem; display:inline-block;}
+  .side-toggle{display:flex; gap:6px; margin-top:10px;}
+  .side-btn{flex:1; padding:5px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; border-radius:6px; border:1px solid var(--pitch-line); background:transparent; color:var(--chalk); opacity:.7; cursor:pointer;}
+  .side-btn.active{background:var(--amber); color:var(--pitch); opacity:1; border-color:var(--amber);}
+  .action-row{display:flex; gap:6px; margin-top:6px;}
+  .btn-finish{flex:1; background:var(--amber); color:var(--pitch); border:none; border-radius:8px; padding:7px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer;}
+  .btn-archive-icon{background:transparent; border:1px solid var(--pitch-line); color:var(--chalk); border-radius:8px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;}
 
-  .side-toggle{
-    display:flex; gap:6px; margin-top:14px; padding:4px;
-    background:rgba(0,0,0,.18); border-radius:12px;
-  }
-  .side-btn{
-    flex:1; padding:8px 4px; font-size:10px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.03em; border-radius:9px; border:none;
-    background:transparent; color:rgba(255,255,255,.65); cursor:pointer;
-    transition:var(--transition);
-  }
-  .side-btn.active{
-    background:#fff; color:var(--navy); box-shadow:0 2px 6px rgba(0,0,0,.15);
-  }
-  .action-row{display:flex; gap:8px; margin-top:10px;}
-  .btn-finish{
-    flex:1; background:#fff; color:var(--navy); border:none;
-    border-radius:12px; padding:11px; font-size:13px; font-weight:800;
-    text-transform:uppercase; letter-spacing:.03em; cursor:pointer;
-    box-shadow:0 3px 10px rgba(0,0,0,.15); transition:var(--transition);
-  }
-  .btn-finish:active{transform:scale(.97);}
-  .btn-archive-icon{
-    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2);
-    color:#fff; border-radius:12px; padding:11px 14px;
-    font-size:13px; font-weight:800; cursor:pointer; transition:var(--transition);
-    display:flex; align-items:center; gap:5px;
-  }
-  .btn-archive-icon:active{transform:scale(.97); background:rgba(255,255,255,.2);}
-  .archive-count{
-    background:var(--amber); color:var(--navy-dark); border-radius:20px;
-    padding:1px 7px; font-size:10px; font-weight:800;
-  }
+  .tab-content{padding:12px 16px 90px;}
+  .card{background:var(--chalk); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:14px;}
+  .card.soft{background:#EDEAE2;}
+  .field-row{display:flex; gap:6px; margin-bottom:8px;}
+  .field{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .field label{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--ink); opacity:.55;}
+  .field input{width:100%; border:1px solid var(--border); background:var(--field); border-radius:6px; padding:6px 4px; font-size:16px; font-weight:700; text-align:center; outline:none;}
+  .field input:disabled{opacity:.6; background:var(--border);}
+  .field-error{font-size:9px; font-weight:700; color:var(--red); min-height:11px; margin-top:2px;}
+  .hint{font-size:10px; font-weight:600; opacity:.5; margin:0 0 8px;}
+  .btn-primary{width:100%; background:var(--pitch); color:var(--chalk); border:none; border-radius:8px; padding:9px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+  .ventana-row{display:flex; gap:6px; margin-bottom:8px;}
+  .ventana-btn{flex:1; padding:6px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:6px; border:2px solid transparent; cursor:pointer;}
+  .type-row{display:flex; gap:6px; margin-bottom:10px;}
+  .type-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px; background:var(--field); border-radius:6px; border:2px solid transparent; cursor:pointer;}
+  .type-btn span.label{font-size:9px; font-weight:700; text-transform:uppercase; opacity:.75;}
+  .card-chip{display:inline-block; width:12px; height:16px; border-radius:2px; vertical-align:middle;}
+  .card-chip.double{position:relative; width:18px;}
+  .card-chip.double .a{position:absolute; left:0; transform:rotate(-6deg);}
+  .card-chip.double .b{position:absolute; left:6px; transform:rotate(6deg);}
 
-  /* ---------- CONTENT ---------- */
-  .tab-content{padding:16px 16px 100px; animation:fadeIn .25s ease;}
-  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
-
-  .card{
-    background:#fff; border:1px solid var(--border); border-radius:var(--radius);
-    padding:16px; margin-bottom:16px; box-shadow:var(--shadow-sm);
-  }
-  .card.soft{background:var(--blue-bg); box-shadow:none; border-color:var(--blue-soft);}
-
-  .field-row{display:flex; gap:8px; margin-bottom:10px;}
-  .field{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;}
-  .field label{
-    font-size:10px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.05em; color:var(--muted);
-  }
-  .field input{
-    width:100%; border:1.5px solid var(--border); background:var(--field);
-    border-radius:12px; padding:11px 6px; font-size:17px; font-weight:800;
-    text-align:center; outline:none; transition:var(--transition);
-    font-family:inherit; color:var(--ink);
-  }
-  .field input:focus{
-    border-color:var(--blue); background:#fff;
-    box-shadow:0 0 0 4px rgba(37,99,235,.12);
-  }
-  .field input:disabled{opacity:.5; background:var(--border);}
-  .field-error{font-size:10px; font-weight:700; color:var(--red); min-height:12px; margin-top:2px;}
-  .hint{font-size:11px; font-weight:600; opacity:.55; margin:0 0 10px; line-height:1.5; color:var(--muted);}
-
-  .btn-primary{
-    width:100%; background:linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
-    color:#fff; border:none;
-    border-radius:12px; padding:13px; font-size:13px; font-weight:800;
-    text-transform:uppercase; letter-spacing:.04em; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    transition:var(--transition); box-shadow:0 4px 14px rgba(37,99,235,.3);
-  }
-  .btn-primary:active:not(:disabled){transform:scale(.98);}
-  .btn-primary:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
-
-  /* ---------- VENTANA / TYPE BUTTONS ---------- */
-  .ventana-row{display:flex; gap:6px; margin-bottom:12px;}
-  .ventana-btn{
-    flex:1; padding:9px 4px; font-size:11px; font-weight:800;
-    text-transform:uppercase; border-radius:10px; border:2px solid transparent;
-    cursor:pointer; transition:var(--transition);
-  }
-  .ventana-btn:active{transform:scale(.96);}
-  .type-row{display:flex; gap:8px; margin-bottom:14px;}
-  .type-btn{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;
-    padding:12px 6px; background:var(--field); border-radius:12px;
-    border:2px solid transparent; cursor:pointer; transition:var(--transition);
-  }
-  .type-btn:active{transform:scale(.96);}
-  .type-btn span.label{font-size:9px; font-weight:800; text-transform:uppercase; opacity:.7;}
-  .card-chip{
-    display:inline-block; width:13px; height:18px; border-radius:2.5px;
-    vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,.2);
-  }
-  .card-chip.double{position:relative; width:20px;}
-  .card-chip.double .a{position:absolute; left:0; transform:rotate(-8deg);}
-  .card-chip.double .b{position:absolute; left:8px; transform:rotate(8deg);}
-
-  /* ---------- LISTS ---------- */
-  .empty{text-align:center; padding:36px 16px; opacity:.4; font-size:13px; font-weight:600; color:var(--muted);}
-  .group-header{display:flex; align-items:center; gap:8px; margin-bottom:8px; padding-left:2px;}
+  .empty{text-align:center; padding:24px 16px; opacity:.4; font-size:12px;}
+  .group-header{display:flex; align-items:center; gap:6px; margin-bottom:4px;}
   .dot{width:10px; height:10px; border-radius:50%; flex-shrink:0; display:inline-block;}
-  .group-label{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em;}
-  .group-divider{border-top:2px solid var(--border); margin-top:10px; padding-top:16px;}
+  .group-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
+  .group-divider{border-top:2px solid var(--border); margin-top:4px; padding-top:12px;}
+  .event-row{display:flex; align-items:center; justify-content:space-between; padding:6px 0;}
+  .event-left{display:flex; align-items:center; gap:8px;}
+  .minute-badge{font-family:'Courier New',monospace; font-size:11px; font-weight:700; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px;}
+  .event-text{font-size:14px; font-weight:600;}
+  .del-btn{background:none; border:none; color:var(--ink); opacity:.35; cursor:pointer; padding:4px; font-size:15px;}
 
-  .event-row{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:10px 12px; background:#fff; border:1px solid var(--border);
-    border-radius:12px; margin-bottom:6px; transition:var(--transition);
-  }
-  .event-row:active{background:var(--blue-bg);}
-  .event-left{display:flex; align-items:center; gap:10px; min-width:0;}
-  .minute-badge{
-    font-family:'SF Mono','Courier New',monospace; font-size:12px; font-weight:800;
-    background:var(--blue-soft); color:var(--blue);
-    padding:4px 9px; border-radius:7px; flex-shrink:0;
-  }
-  .event-text{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .del-btn{
-    background:none; border:none; color:var(--muted); opacity:.5;
-    cursor:pointer; padding:6px; font-size:16px; transition:var(--transition);
-    border-radius:8px; flex-shrink:0;
-  }
-  .del-btn:active{opacity:1; background:rgba(220,38,38,.08); color:var(--red);}
+  .bottom-nav{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; display:flex; background:var(--pitch); border-top:1px solid var(--pitch-line); z-index:20;}
+  .nav-btn{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px 0; background:none; border:none; cursor:pointer; position:relative;}
+  .nav-icon{font-size:16px; line-height:1; opacity:.55;}
+  .nav-btn.active .nav-icon{opacity:1;}
+  .nav-label{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:#5A6E64;}
+  .nav-btn.active .nav-label{color:var(--chalk);}
+  .nav-badge{position:absolute; top:2px; right:28%; min-width:15px; height:15px; border-radius:50%; background:var(--amber); color:var(--pitch); font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 3px;}
 
-  /* ---------- BOTTOM NAV ---------- */
-  .bottom-nav{
-    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
-    width:100%; max-width:480px; display:flex;
-    background:rgba(255,255,255,.92); backdrop-filter:blur(20px);
-    border-top:1px solid var(--border); z-index:20;
-    padding-bottom:env(safe-area-inset-bottom, 0);
-    box-shadow:0 -4px 20px rgba(15,23,42,.06);
-  }
-  .nav-btn{
-    flex:1; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; gap:4px; padding:10px 0 12px; background:none;
-    border:none; cursor:pointer; position:relative; transition:var(--transition);
-  }
-  .nav-btn:active{background:var(--blue-bg);}
-  .nav-icon{font-size:18px; line-height:1; opacity:.4; transition:var(--transition);}
-  .nav-btn.active .nav-icon{opacity:1; transform:translateY(-1px);}
-  .nav-label{
-    font-size:10px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.03em; color:var(--muted); transition:var(--transition);
-  }
-  .nav-btn.active .nav-label{color:var(--blue);}
-  .nav-badge{
-    position:absolute; top:4px; right:22%; min-width:16px; height:16px;
-    border-radius:50%; background:var(--blue); color:#fff;
-    font-size:9px; font-weight:800; display:flex; align-items:center;
-    justify-content:center; padding:0 4px; box-shadow:0 2px 6px rgba(37,99,235,.4);
-  }
+  .resumen-header{background:var(--pitch); padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:20;}
+  .back-btn{background:none; border:none; color:var(--chalk); font-size:20px; cursor:pointer; padding:2px; line-height:1;}
+  .resumen-title{font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--chalk);}
+  .resumen-body{padding:16px; max-width:480px; margin:0 auto;}
+  .score-card{background:var(--pitch); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center;}
+  .score-card .label{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--chalk); opacity:.7; margin-bottom:4px;}
+  .score-card .row{display:flex; align-items:center; justify-content:center; gap:12px;}
+  .score-card .side{font-size:12px; font-weight:700; text-transform:uppercase; color:var(--chalk); max-width:5.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .score-card .sublabel{font-size:10px; font-weight:600; color:var(--chalk); opacity:.5; margin-top:4px;}
+  .section{margin-bottom:16px;}
+  .section h3{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; opacity:.6; margin:0 0 8px;}
+  .section .empty-line{font-size:12px; opacity:.4; margin:0;}
+  .group-box{border:1px solid var(--border); border-radius:12px; overflow:hidden;}
+  .group-box .g-head{padding:6px 12px;}
+  .group-box .g-head span{font-size:10px; font-weight:700; text-transform:uppercase;}
+  .group-box .g-body{padding:6px 12px; background:var(--chalk);}
+  .group-box .g-body div{font-size:14px; font-weight:600; padding:2px 0;}
+  .list-box{border:1px solid var(--border); border-radius:12px; padding:6px 12px; background:var(--chalk);}
+  .list-box div{font-size:14px; font-weight:600; padding:2px 0;}
+  .archive-btn{width:100%; margin-top:8px; background:var(--amber); color:var(--pitch); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer;}
+  .archive-label{font-size:11px; font-weight:600; opacity:.5; margin:0 0 12px;}
 
-  /* ---------- RESUMEN ---------- */
-  .resumen-header{
-    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 100%);
-    padding:16px; display:flex; align-items:center; gap:12px;
-    position:sticky; top:0; z-index:20; box-shadow:0 4px 16px rgba(15,23,42,.2);
-    border-bottom-left-radius:20px; border-bottom-right-radius:20px;
-  }
-  .back-btn{
-    background:rgba(255,255,255,.12); border:none; color:#fff;
-    font-size:18px; cursor:pointer; padding:7px 13px; line-height:1;
-    border-radius:10px; transition:var(--transition);
-  }
-  .back-btn:active{background:rgba(255,255,255,.25);}
-  .resumen-title{
-    font-size:15px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.04em; color:#fff;
-  }
-  .resumen-body{padding:16px; max-width:480px; margin:0 auto; animation:fadeIn .3s ease;}
-  .score-card{
-    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
-    border-radius:var(--radius); padding:20px 14px; margin-bottom:20px;
-    text-align:center; box-shadow:var(--shadow-lg);
-  }
-  .score-card .label{
-    font-size:11px; font-weight:800; text-transform:uppercase;
-    color:#fff; opacity:.6; margin-bottom:8px; letter-spacing:.05em;
-  }
-  .score-card .row{display:flex; align-items:center; justify-content:center; gap:14px;}
-  .score-card .side{
-    font-size:13px; font-weight:800; text-transform:uppercase;
-    color:#fff; max-width:5.5rem; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap;
-  }
-  .score-card .sublabel{
-    font-size:10px; font-weight:600; color:#fff;
-    opacity:.45; margin-top:8px;
-  }
-  .section{margin-bottom:20px;}
-  .section h3{
-    font-size:12px; font-weight:800; text-transform:uppercase;
-    letter-spacing:.05em; color:var(--muted); margin:0 0 10px;
-  }
-  .section .empty-line{font-size:13px; opacity:.5; margin:0; font-weight:600; color:var(--muted);}
-  .group-box{border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm);}
-  .group-box .g-head{padding:8px 14px;}
-  .group-box .g-head span{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.03em;}
-  .group-box .g-body{padding:8px 14px; background:#fff;}
-  .group-box .g-body div{font-size:14px; font-weight:600; padding:3px 0;}
-  .list-box{border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px; background:#fff; box-shadow:var(--shadow-sm);}
-  .list-box div{font-size:14px; font-weight:600; padding:3px 0;}
-  .archive-btn{
-    width:100%; margin-top:10px;
-    background:linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
-    color:#fff;
-    border:none; border-radius:12px; padding:15px; font-size:13px;
-    font-weight:800; text-transform:uppercase; letter-spacing:.04em;
-    cursor:pointer; box-shadow:0 4px 14px rgba(37,99,235,.3);
-    transition:var(--transition);
-  }
-  .archive-btn:active{transform:scale(.98);}
-  .archive-label{font-size:11px; font-weight:600; color:var(--muted); margin:0 0 14px;}
+  .archivo-item{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--field); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; cursor:pointer; text-align:left;}
+  .archivo-item .main{font-size:14px; font-weight:700;}
+  .archivo-item .sub{font-size:11px; opacity:.5; margin-top:2px;}
 
-  /* ---------- ARCHIVO ---------- */
-  .archivo-item{
-    width:100%; display:flex; align-items:center; justify-content:space-between;
-    background:#fff; border:1px solid var(--border); border-radius:var(--radius);
-    padding:14px; margin-bottom:10px; cursor:pointer; text-align:left;
-    box-shadow:var(--shadow-sm); transition:var(--transition);
-  }
-  .archivo-item:active{transform:scale(.98); background:var(--blue-bg);}
-  .archivo-item .main{font-size:14px; font-weight:800;}
-  .archivo-item .sub{font-size:11px; color:var(--muted); margin-top:3px;}
-  .archivo-item .arrow{opacity:.3; font-size:18px; color:var(--blue);}
-
-  /* ---------- PLAYER ROWS ---------- */
-  .player-row{
-    display:flex; align-items:center; gap:10px; padding:10px 4px;
-    border-bottom:1px solid var(--border); transition:var(--transition);
-    position:relative; border-radius:10px;
-  }
+  .player-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border);}
   .player-row:last-child{border-bottom:none;}
-  .player-num{
-    font-family:'SF Mono','Courier New',monospace; font-weight:800; font-size:12px;
-    background:var(--blue-soft); color:var(--blue); padding:4px 8px;
-    border-radius:7px; min-width:32px; text-align:center; flex-shrink:0;
-  }
+  .player-num{font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0;}
   .player-name{flex:1; font-size:14px; font-weight:600; min-width:0;}
   .player-name.strike{text-decoration:line-through; opacity:.55;}
-  .sub-in{font-size:12px; font-weight:800; color:var(--green-ok); flex-shrink:0;}
-  button.player-num{
-    all:unset; font-family:'SF Mono','Courier New',monospace; font-weight:800;
-    font-size:12px; background:var(--blue-soft); color:var(--blue);
-    padding:4px 8px; border-radius:7px; min-width:32px; text-align:center;
-    flex-shrink:0; cursor:pointer; transition:var(--transition);
-    border:1.5px dashed transparent;
-  }
-  button.player-num:hover,button.player-num:active{
-    background:var(--blue); color:#fff; border-color:var(--blue);
-  }
-  button.player-name{
-    all:unset; flex:1; font-size:14px; font-weight:600; min-width:0;
-    cursor:pointer; text-align:left; padding-bottom:2px;
-    border-bottom:1.5px dashed var(--border); transition:var(--transition);
-  }
-  button.player-name:hover,button.player-name:active{
-    border-bottom-color:var(--blue); color:var(--blue);
-  }
+  .sub-in{font-size:12px; font-weight:700; color:var(--green-ok); flex-shrink:0;}
+  .player-num.editable, .player-name.editable{cursor:pointer;}
+  .player-num.editable{border-bottom:1px dashed var(--pitch-line);}
+  .player-name.editable:not(.strike){border-bottom:1px dashed var(--border);}
+  button.player-num{all:unset; font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0; cursor:pointer; border-bottom:1px dashed var(--amber);}
+  button.player-name{all:unset; flex:1; font-size:14px; font-weight:600; min-width:0; cursor:pointer; text-align:left; border-bottom:1px dashed var(--border);}
   button.player-name.strike{text-decoration:line-through; opacity:.55;}
-
-  /* Inline edit */
-  .inline-edit-num{
-    width:3.4rem; font-family:'SF Mono','Courier New',monospace; font-weight:800;
-    font-size:14px; text-align:center; padding:6px 4px; border:2px solid var(--blue);
-    border-radius:9px; background:#fff; color:var(--ink); flex-shrink:0;
-    box-shadow:0 0 0 4px rgba(37,99,235,.15); outline:none;
-  }
-  .inline-edit-name{
-    flex:1; min-width:0; font-size:14px; font-weight:600; padding:6px 9px;
-    border:2px solid var(--blue); border-radius:9px; background:#fff; color:var(--ink);
-    box-shadow:0 0 0 4px rgba(37,99,235,.15); outline:none;
-  }
-
-  /* Drag handle (visual, ya no se usa para arrastrar) */
-  .drag-handle{
-    background:none; border:none; color:var(--muted); opacity:.35;
-    font-size:18px; padding:2px 6px; flex-shrink:0;
-    line-height:1; border-radius:6px; pointer-events:none;
-  }
-
-  /* Estado mientras se está pulsando para arrastrar */
-  .player-row.long-pressing{
-    background:var(--blue-soft);
-    box-shadow:0 0 0 2px var(--blue) inset;
-    border-radius:10px;
-  }
-  .player-row.dragging{
-    background:#fff;
-    box-shadow:0 12px 30px rgba(37,99,235,.25);
-    border:1px solid var(--blue);
-    border-radius:12px; opacity:1; z-index:10;
-    position:relative; transform:scale(1.02);
-    transition:box-shadow .15s ease, transform .15s ease;
-  }
-  .drop-indicator{
-    height:3px; background:var(--blue); border-radius:3px; margin:3px 0;
-    box-shadow:0 0 10px rgba(37,99,235,.6);
-    animation:pulse .9s infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.4;}}
-
-  /* ---------- TOAST ---------- */
-  .toast{
-    position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--navy-dark); color:#fff; padding:11px 22px;
-    border-radius:12px; font-size:13px; font-weight:700; opacity:0;
-    pointer-events:none; transition:all .3s ease; z-index:100;
-    box-shadow:0 8px 24px rgba(15,23,42,.3); max-width:90%; text-align:center;
-  }
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .inline-edit-num{width:3.2rem; font-family:'Courier New',monospace; font-weight:700; font-size:13px; text-align:center; padding:3px 4px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink); flex-shrink:0;}
+  .inline-edit-name{flex:1; min-width:0; font-size:14px; font-weight:600; padding:3px 6px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink);}
+  .drag-handle{background:none; border:none; color:var(--ink); opacity:.4; font-size:16px; padding:2px 4px; cursor:pointer; flex-shrink:0; line-height:1;}
+  .player-row.dragging{background:var(--field); box-shadow:0 6px 14px rgba(0,0,0,.18); border-radius:8px; opacity:.95;}
+  .drag-handle{touch-action:none;}
+  .drop-indicator{height:3px; background:var(--amber); border-radius:2px; margin:2px 0;}
 </style>
 </head>
 <body>
 <div id="app"></div>
-<div class="toast" id="toast"></div>
 <script>
 (function(){
   const HOME_NAME = "C.D. Raíces";
@@ -402,10 +128,10 @@
   const ARCHIVE_KEY = "partidos-archivados";
   const PLANTILLA_KEY = "plantilla-jugadores";
   const VENTANAS = [
-    { key: "descanso", short: "Descanso", label: "Descanso", color: "#DB2777", soft: "#FCE7F3" },
-    { key: "1", short: "V1", label: "Ventana 1", color: "#DC2626", soft: "#FEE2E2" },
-    { key: "2", short: "V2", label: "Ventana 2", color: "#D97706", soft: "#FEF3C7" },
-    { key: "3", short: "V3", label: "Ventana 3", color: "#2563EB", soft: "#DBEAFE" },
+    { key: "descanso", short: "Descanso", label: "Descanso", color: "#E85D9E", soft: "#FBE1EE" },
+    { key: "1", short: "V1", label: "Ventana 1", color: "#C6362F", soft: "#F6D9D7" },
+    { key: "2", short: "V2", label: "Ventana 2", color: "#D19A00", soft: "#FCEFC2" },
+    { key: "3", short: "V3", label: "Ventana 3", color: "#2563A6", soft: "#D9E6F2" },
   ];
 
   function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -421,13 +147,6 @@
   }
   function tipoLabel(t){ return t==='amarilla'?'Amarilla': t==='roja'?'Roja':'2ª amarilla'; }
 
-  function showToast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
-  }
-
   let state = {
     view: 'match', tab: 'alineacion',
     awayName: 'Rival', esLocal: true, observaciones: '',
@@ -435,7 +154,7 @@
     archivedMatches: [], openArchiveId: null, plantilla: [],
   };
   let alineacionForm = { numero: '', nombre: '' };
-  let editingPlayer = null;
+  let editingPlayer = null; // { id, field: 'num' | 'name' }
   let cambiosForm = { ventana: 'descanso', minuto: '', rows: [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}] };
   let tarjetasForm = { dorsal: '', tipo: 'amarilla', minuto: '' };
   let golesForm = { dorsal: '' };
@@ -526,12 +245,11 @@
   function renderHeader(){
     const homeScore = state.goals.length, awayScore = state.rivalGoals.length;
     const homeSpan = `<span class="team-name">${esc(HOME_NAME)}</span>`;
-    const awayBtn = `<button class="edit-btn" id="edit-away-btn"><span class="name">${esc(state.awayName)}</span> <span class="pencil">✎</span></button>`;
+    const awayBtn = `<button class="edit-btn" id="edit-away-btn"><span class="name">${esc(state.awayName)}</span> ✎</button>`;
     const leftName = state.esLocal ? homeSpan : awayBtn;
     const rightName = state.esLocal ? awayBtn : homeSpan;
     const leftScore = state.esLocal ? homeScore : awayScore;
     const rightScore = state.esLocal ? awayScore : homeScore;
-    const archiveCount = state.archivedMatches.length;
     return `
     <div class="header">
       <div class="score-row">
@@ -549,7 +267,7 @@
       </div>
       <div class="action-row">
         <button class="btn-finish" id="btn-finish">📋 Finalizar partido</button>
-        <button class="btn-archive-icon" id="btn-open-archive">🗂${archiveCount>0?`<span class="archive-count">${archiveCount}</span>`:''}</button>
+        <button class="btn-archive-icon" id="btn-open-archive">🗂 ${state.archivedMatches.length>0?state.archivedMatches.length:''}</button>
       </div>
     </div>`;
   }
@@ -581,7 +299,7 @@
   function renderPlayerLine(p, salidas, roster, readOnly, entradas){
     const rosterList = roster || state.roster;
     const delBtn = readOnly ? '' : `<button class="del-btn" data-del-player="${p.id}">🗑</button>`;
-    const handleBtn = readOnly ? '' : `<span class="drag-handle" aria-hidden="true">⠿</span>`;
+    const handleBtn = readOnly ? '' : `<button class="drag-handle" type="button" data-drag="${p.id}">⠿</button>`;
     const editingNum = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='num';
     const editingName = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='name';
 
@@ -633,17 +351,17 @@
     const titulares = state.roster.slice(0,11);
     const suplentes = state.roster.slice(11,18);
     const noConvocados = state.roster.slice(18);
-    let html = `<div class="group-header"><span class="group-label" style="color:var(--blue)">Titulares (${titulares.length}/11)</span></div>`;
+    let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares (${titulares.length}/11)</span></div>`;
     html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('');
     if(suplentes.length>0){
       html += `<div class="group-divider">
-        <div class="group-header"><span class="group-label" style="color:var(--muted)">Suplentes (${suplentes.length}/7)</span></div>
+        <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes (${suplentes.length}/7)</span></div>
         ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
       </div>`;
     }
     if(noConvocados.length>0){
       html += `<div class="group-divider">
-        <div class="group-header"><span class="group-label" style="color:var(--muted); opacity:.6;">No convocados</span></div>
+        <div class="group-header"><span class="group-label" style="color:var(--ink); opacity:.45;">No convocados</span></div>
         ${noConvocados.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
       </div>`;
     }
@@ -659,128 +377,84 @@
         </div>
         <button class="btn-primary" id="btn-add-jugador" disabled>+ Añadir jugador</button>
       </div>
-      <p class="hint">Mantén pulsada una fila para reordenar. Toca el dorsal o el nombre para editarlos.</p>
+      <p class="hint">Los 11 primeros son titulares, los 7 siguientes suplentes (puede haber menos), y el resto queda como no convocados. Mantén pulsado ⠿ y desliza para reordenar.</p>
       <div id="alineacion-list">${renderAlineacionList()}</div>
     </div>`;
   }
-
-  // ---------- Drag con long-press ----------
   function attachAlineacionDrag(){
     const listEl = document.getElementById('alineacion-list');
     if(!listEl) return;
+    listEl.querySelectorAll('.drag-handle').forEach(handle=>{
+      handle.addEventListener('pointerdown', (e)=>{
+        e.preventDefault();
+        const row = handle.closest('.player-row');
+        if(!row) return;
+        const playerId = row.dataset.playerId;
+        handle.setPointerCapture(e.pointerId);
 
-    let longPressTimer = null;
-    let activeDrag = null;
+        const rows = Array.from(listEl.querySelectorAll('.player-row[data-player-id]'));
+        const positions = rows.map(r=>{
+          const rect = r.getBoundingClientRect();
+          return { id: r.dataset.playerId, center: rect.top + rect.height/2 };
+        }).filter(p=>p.id!==playerId);
 
-    function startDrag(row, playerId, startEvent){
-      const rows = Array.from(listEl.querySelectorAll('.player-row[data-player-id]'));
-      const positions = rows.map(r=>{
-        const rect = r.getBoundingClientRect();
-        return { id: r.dataset.playerId, center: rect.top + rect.height/2 };
-      }).filter(p=>p.id!==playerId);
+        const rowRect = row.getBoundingClientRect();
+        const grabOffset = e.clientY - rowRect.top;
+        row.classList.add('dragging');
 
-      const rowRect = row.getBoundingClientRect();
-      const grabOffset = startEvent.clientY - rowRect.top;
-      row.classList.remove('long-pressing');
-      row.classList.add('dragging');
+        const indicatorEl = document.createElement('div');
+        indicatorEl.className = 'drop-indicator';
 
-      const indicatorEl = document.createElement('div');
-      indicatorEl.className = 'drop-indicator';
+        let targetIndex = 0;
 
-      let targetIndex = 0;
-
-      function computeTargetIndex(y){
-        const floatCenter = y - grabOffset + rowRect.height/2;
-        for(let i=0;i<positions.length;i++){
-          if(floatCenter < positions[i].center) return i;
-        }
-        return positions.length;
-      }
-      function placeIndicator(idx){
-        if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
-        const domOthers = rows.filter(r=>r.dataset.playerId!==playerId);
-        if(idx >= domOthers.length){
-          if(domOthers.length) domOthers[domOthers.length-1].after(indicatorEl);
-          else listEl.appendChild(indicatorEl);
-        } else {
-          domOthers[idx].before(indicatorEl);
-        }
-        targetIndex = idx;
-      }
-
-      placeIndicator(computeTargetIndex(startEvent.clientY));
-
-      function onMove(ev){
-        ev.preventDefault();
-        row.style.transform = `translateY(${ev.clientY - grabOffset - rowRect.top}px)`;
-        placeIndicator(computeTargetIndex(ev.clientY));
-      }
-      function onUp(){
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-        document.removeEventListener('pointercancel', onUp);
-        row.classList.remove('dragging');
-        row.style.transform = '';
-        if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
-
-        const others = state.roster.filter(p=>p.id!==playerId);
-        const moving = state.roster.find(p=>p.id===playerId);
-        if(moving){
-          const idx = Math.max(0, Math.min(targetIndex, others.length));
-          others.splice(idx, 0, moving);
-          state.roster = others;
-          saveMatch();
-        }
-        activeDrag = null;
-        render();
-      }
-      document.addEventListener('pointermove', onMove, {passive:false});
-      document.addEventListener('pointerup', onUp);
-      document.addEventListener('pointercancel', onUp);
-    }
-
-    listEl.addEventListener('pointerdown', (e)=>{
-      // Ignorar si el toque es sobre un input o un botón de edición
-      if(e.target.closest('input, button.player-num, button.player-name, .del-btn')) return;
-      const row = e.target.closest('.player-row');
-      if(!row) return;
-      const playerId = row.dataset.playerId;
-      const startEvent = { clientY: e.clientY, clientX: e.clientX };
-
-      row.classList.add('long-pressing');
-      longPressTimer = setTimeout(()=>{
-        longPressTimer = null;
-        activeDrag = playerId;
-        if(navigator.vibrate) navigator.vibrate(15);
-        startDrag(row, playerId, startEvent);
-      }, 250);
-
-      const cancelLongPress = (ev)=>{
-        if(ev && ev.type === 'pointermove'){
-          const dy = Math.abs(ev.clientY - startEvent.clientY);
-          const dx = Math.abs(ev.clientX - startEvent.clientX);
-          if(dy > 8 || dx > 8){
-            if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; }
-            row.classList.remove('long-pressing');
+        function computeTargetIndex(y){
+          const floatCenter = y - grabOffset + rowRect.height/2;
+          for(let i=0;i<positions.length;i++){
+            if(floatCenter < positions[i].center) return i;
           }
-        } else {
-          if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; }
-          row.classList.remove('long-pressing');
+          return positions.length;
         }
-      };
-      const cleanup = ()=>{
-        row.removeEventListener('pointermove', cancelLongPress);
-        row.removeEventListener('pointerup', cleanup);
-        row.removeEventListener('pointercancel', cleanup);
-        if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer = null; }
-        if(!activeDrag) row.classList.remove('long-pressing');
-      };
-      row.addEventListener('pointermove', cancelLongPress);
-      row.addEventListener('pointerup', cleanup);
-      row.addEventListener('pointercancel', cleanup);
+        function placeIndicator(idx){
+          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
+          const domOthers = rows.filter(r=>r.dataset.playerId!==playerId);
+          if(idx >= domOthers.length){
+            if(domOthers.length) domOthers[domOthers.length-1].after(indicatorEl);
+            else listEl.appendChild(indicatorEl);
+          } else {
+            domOthers[idx].before(indicatorEl);
+          }
+          targetIndex = idx;
+        }
+
+        placeIndicator(computeTargetIndex(e.clientY));
+
+        function onMove(ev){
+          row.style.transform = `translateY(${ev.clientY - grabOffset - rowRect.top}px)`;
+          placeIndicator(computeTargetIndex(ev.clientY));
+        }
+        function onUp(){
+          handle.releasePointerCapture(e.pointerId);
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          row.classList.remove('dragging');
+          row.style.transform = '';
+          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
+
+          const others = state.roster.filter(p=>p.id!==playerId);
+          const moving = state.roster.find(p=>p.id===playerId);
+          if(moving){
+            const idx = Math.max(0, Math.min(targetIndex, others.length));
+            others.splice(idx, 0, moving);
+            state.roster = others;
+            saveMatch();
+          }
+          render();
+        }
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+      });
     });
   }
-
   function attachAlineacionEvents(){
     const numero = document.getElementById('al-numero');
     const nombre = document.getElementById('al-nombre');
@@ -798,9 +472,9 @@
         const newId = uid();
         state.roster.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
         state.plantilla.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
-        savePlantilla(); saveMatch();
+        savePlantilla();
+        saveMatch();
         alineacionForm.numero=''; alineacionForm.nombre='';
-        showToast('Jugador añadido');
         render();
       });
     }
@@ -809,9 +483,7 @@
       if(delBtn){
         state.roster = state.roster.filter(p=>p.id!==delBtn.dataset.delPlayer);
         state.plantilla = state.plantilla.filter(p=>p.id!==delBtn.dataset.delPlayer);
-        savePlantilla(); saveMatch(); editingPlayer=null;
-        showToast('Jugador eliminado');
-        render(); return;
+        savePlantilla(); saveMatch(); editingPlayer=null; render(); return;
       }
       const numBtn = e.target.closest('[data-edit-num]');
       if(numBtn){ editingPlayer = {id:numBtn.dataset.editNum, field:'num'}; render(); return; }
@@ -868,7 +540,7 @@
     const ventanaButtons = VENTANAS.map(v=>`
       <button class="ventana-btn" data-vkey="${v.key}" style="background:${v.soft};color:${v.color};border-color:${cambiosForm.ventana===v.key?v.color:'transparent'}">${v.short}</button>
     `).join('');
-    const hint = locked!==undefined ? `<p class="hint" style="color:${VENTANAS.find(v=>v.key===cambiosForm.ventana).color};">Esta ventana ya está fijada en el minuto ${locked}'</p>` : '';
+    const hint = locked!==undefined ? `<p class="hint">Esta ventana ya está fijada en el minuto ${locked}'</p>` : '';
     const rosterHint = state.roster.length===0 ? `<p class="hint" style="color:var(--red);">Añade primero la alineación para poder registrar cambios.</p>` : '';
     const minutoValue = locked!==undefined ? locked : cambiosForm.minuto;
 
@@ -894,7 +566,7 @@
         <div id="ventana-hint">${hint}</div>
         <div class="field-row" style="margin-bottom:10px;">
           <div class="field" style="flex:0 0 6rem;"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(minutoValue)}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}></div>
-          <div class="field" style="justify-content:flex-end;"><span class="hint" style="margin:0;">Se aplica a los 3 cambios</span></div>
+          <div class="field" style="justify-content:flex-end;"><span class="hint" style="margin:0;">Se aplica a los 3 cambios de abajo</span></div>
         </div>
         ${rowsHtml}
         <button class="btn-primary" id="btn-add-cambio" disabled style="margin-top:4px;">+ Registrar cambios</button>
@@ -944,23 +616,23 @@
         const entra = row.entra, sale = row.sale;
         let err = '';
         if(entra==='' && sale===''){
-          // empty
+          // fila vacía, se ignora
         } else if(entra==='' || sale===''){
           err = 'Rellena entra y sale';
         } else if(entra===sale){
           err = 'No puede coincidir';
         } else if(!convocadosNums.has(entra)){
-          err = 'Entra: no convocado';
+          err = 'Entra: no está convocado';
         } else if(titularesNums.has(entra)){
-          err = 'Entra: titular no puede entrar';
+          err = 'Entra: un titular no puede entrar';
         } else if(entrados.has(entra) || salidos.has(entra) || seenEntra.has(entra)){
           err = 'Entra: ya usado';
         } else if(!convocadosNums.has(sale)){
-          err = 'Sale: no convocado';
+          err = 'Sale: no está convocado';
         } else if(salidos.has(sale) || seenSale.has(sale)){
           err = 'Sale: ya salió';
         } else if(suplentesNums.has(sale) && !entrados.has(sale)){
-          err = 'Sale: suplente no ha entrado';
+          err = 'Sale: este suplente no ha entrado';
         } else {
           seenEntra.add(entra); seenSale.add(sale);
           anyValid = true;
@@ -1004,7 +676,6 @@
       saveMatch();
       cambiosForm.rows = [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}];
       cambiosForm.minuto = '';
-      showToast(added===1?'Cambio registrado':`${added} cambios registrados`);
       render();
     });
     document.getElementById('cambios-list').addEventListener('click', (e)=>{
@@ -1067,7 +738,6 @@
       state.cards.push({id:uid(), dorsal:dorsal.value, tipo:tarjetasForm.tipo, minuto:minuto.value});
       saveMatch();
       tarjetasForm.dorsal=''; tarjetasForm.minuto='';
-      showToast('Tarjeta registrada');
       render();
     });
     document.getElementById('tarjetas-list').addEventListener('click',(e)=>{
@@ -1081,7 +751,7 @@
     return `
     <div class="tab-content">
       <div class="card">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">⚽ Gol de ${esc(HOME_NAME)}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;margin-bottom:8px;">⚽ Gol de ${esc(HOME_NAME)}</div>
         <div class="field-row">
           <div class="field"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="g-dorsal" value="${esc(golesForm.dorsal)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
           <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="g-minuto" value="" placeholder="—" maxlength="3" onfocus="this.select()"></div>
@@ -1090,10 +760,10 @@
       </div>
       <div id="goles-list">${renderGolesList()}</div>
       <div class="card soft" style="margin-top:16px;">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Gol del ${esc(state.awayName)}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;margin-bottom:8px;">Gol del ${esc(state.awayName)}</div>
         <div class="field-row" style="align-items:flex-end;">
           <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="gr-minuto" value="" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <button class="btn-primary" id="btn-add-rival-gol" style="flex:0 0 auto;width:auto;padding:13px 20px;background:var(--navy);">+1 gol</button>
+          <button class="btn-primary" id="btn-add-rival-gol" style="flex:0 0 auto;width:auto;padding:8px 18px;background:var(--rival);">+1 gol</button>
         </div>
       </div>
       <div id="rival-goles-list">${renderRivalGolesList()}</div>
@@ -1131,7 +801,6 @@
       state.goals.push({id:uid(), dorsal:dorsal.value, minuto:minuto.value});
       saveMatch();
       golesForm.dorsal='';
-      showToast('¡Gol!');
       render();
     });
     document.getElementById('goles-list').addEventListener('click',(e)=>{
@@ -1144,7 +813,6 @@
       if(rMinuto.value==='') return;
       state.rivalGoals.push({id:uid(), minuto:rMinuto.value});
       saveMatch();
-      showToast('Gol rival');
       render();
     });
     const rivalList = document.getElementById('rival-goles-list');
@@ -1182,16 +850,15 @@
     return `
     <div class="tab-content">
       <div class="card">
-        <span style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:10px;">📝 Observaciones del partido</span>
-        <textarea id="obs-text" placeholder="Lesiones, incidencias, decisiones arbitrales, lo que quieras anotar..." style="width:100%; min-height:200px; border:1.5px solid var(--border); background:var(--field); border-radius:12px; padding:12px; font-size:14px; font-family:inherit; color:var(--ink); resize:vertical; outline:none; transition:var(--transition);">${esc(state.observaciones)}</textarea>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;display:block;margin-bottom:8px;">📝 Observaciones del partido</span>
+        <textarea id="obs-text" placeholder="Lesiones, incidencias, decisiones arbitrales raras, lo que quieras anotar..." style="width:100%; min-height:180px; border:1px solid var(--border); background:var(--field); border-radius:8px; padding:10px; font-size:14px; font-family:inherit; color:var(--ink); resize:vertical;">${esc(state.observaciones)}</textarea>
       </div>
     </div>`;
   }
   function attachObservacionesEvents(){
     const txt = document.getElementById('obs-text');
     txt.addEventListener('input', ()=>{ state.observaciones = txt.value; });
-    txt.addEventListener('focus', ()=>{ txt.style.borderColor='var(--blue)'; txt.style.boxShadow='0 0 0 4px rgba(37,99,235,.12)'; txt.style.background='#fff'; });
-    txt.addEventListener('blur', ()=>{ saveMatch(); txt.style.borderColor='var(--border)'; txt.style.boxShadow='none'; txt.style.background='var(--field)'; });
+    txt.addEventListener('blur', ()=>{ saveMatch(); });
   }
 
   // ---------- Resumen ----------
@@ -1236,8 +903,8 @@
           ${roster.length===0? `<p class="empty-line">Sin alineación registrada.</p>` : `
             <div class="list-box">
               ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}
-              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
-              ${noConvocados.length>0? `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;opacity:.6;">${noConvocados.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
+              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
+              ${noConvocados.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;opacity:.6;">${noConvocados.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
             </div>
           `}
         </div>
@@ -1250,7 +917,7 @@
                 <div style="${gi>0?'border-top:1px solid var(--border)':''}">
                   <div class="g-head" style="background:${g.soft}"><span style="color:${g.color}">${g.label}</span></div>
                   <div class="g-body">
-                    ${g.items.map(s=>`<div><span style="font-family:monospace;opacity:.6;margin-right:8px;">${s.minuto}'</span><span style="color:var(--green-ok)">↑${s.entra}</span> <span style="color:var(--red)">↓${s.sale}</span></div>`).join('')}
+                    ${g.items.map(s=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${s.minuto}'</span><span style="color:var(--green-ok)">↑${s.entra}</span> <span style="color:var(--red)">↓${s.sale}</span></div>`).join('')}
                   </div>
                 </div>
               `).join('')}
@@ -1262,7 +929,7 @@
           <h3>Tarjetas</h3>
           ${sortedCards.length===0? `<p class="empty-line">Sin tarjetas registradas.</p>` : `
             <div class="list-box">
-              ${sortedCards.map(c=>`<div><span style="font-family:monospace;opacity:.6;margin-right:8px;">${c.minuto}'</span>${cardChip(c.tipo)} Nº ${c.dorsal} <span style="font-weight:400;opacity:.5">· ${tipoLabel(c.tipo)}</span></div>`).join('')}
+              ${sortedCards.map(c=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${c.minuto}'</span>${cardChip(c.tipo)} Nº ${c.dorsal} <span style="font-weight:400;opacity:.5">· ${tipoLabel(c.tipo)}</span></div>`).join('')}
             </div>
           `}
         </div>
@@ -1271,7 +938,7 @@
           <h3>Goles ${esc(HOME_NAME)}</h3>
           ${sortedGoals.length===0? `<p class="empty-line">Sin goles registrados.</p>` : `
             <div class="list-box">
-              ${sortedGoals.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:8px;">${g.minuto}'</span>⚽ Nº ${g.dorsal}</div>`).join('')}
+              ${sortedGoals.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${g.minuto}'</span>⚽ Nº ${g.dorsal}</div>`).join('')}
             </div>
           `}
         </div>
@@ -1280,7 +947,7 @@
           <h3>Goles ${esc(awayName)}</h3>
           ${sortedRival.length===0? `<p class="empty-line">Sin goles registrados.</p>` : `
             <div class="list-box">
-              ${sortedRival.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:8px;">${g.minuto}'</span>Gol ${esc(awayName)}</div>`).join('')}
+              ${sortedRival.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${g.minuto}'</span>Gol ${esc(awayName)}</div>`).join('')}
             </div>
           `}
         </div>
@@ -1312,6 +979,7 @@
           subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
         });
         saveArchive();
+        // guarda en la plantilla el orden y los datos finales de este partido
         const rosterIds = new Set(state.roster.map(p=>p.id));
         const reordered = state.roster.map(p=>({ id:p.id, numero:p.numero, nombre:p.nombre }));
         const missing = state.plantilla.filter(pl=>!rosterIds.has(pl.id));
@@ -1323,7 +991,6 @@
         saveMatch();
         state.tab = 'alineacion';
         state.view = 'match';
-        showToast('Partido archivado');
         render();
       });
     }
@@ -1350,7 +1017,7 @@
                 <div class="main">${line}</div>
                 <div class="sub">${esc(m.dateLabel)}</div>
               </div>
-              <span class="arrow">›</span>
+              <span style="opacity:.4;">›</span>
             </button>`;
           }).join('')}
         `}
