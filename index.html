@@ -1,126 +1,379 @@
+Aquí tienes una versión mejorada de tu app, con un diseño más moderno, fluido e intuitivo, y con varias mejoras de usabilidad (teclado numérico, feedback visual, gestos, etc.). He mantenido toda la funcionalidad pero he reescrito la interfaz y la experiencia de usuario.
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0B3D2E">
 <title>Control de Partido — C.D. Raíces</title>
 <link rel="icon" href="data:,">
 <style>
   :root{
-    --pitch:#0B3D2E; --pitch-line:#1B5E3F; --chalk:#F5F3EC; --ink:#12201A;
-    --amber:#F2B705; --red:#C6362F; --rival:#5B6B6B; --border:#D8D2C0; --field:#EFEBDF;
-    --green-ok:#1E8E3E;
+    --pitch:#0B3D2E; --pitch-dark:#08281D; --pitch-line:#1B5E3F;
+    --chalk:#F5F3EC; --ink:#12201A;
+    --amber:#F2B705; --red:#C6362F; --rival:#5B6B6B;
+    --border:#D8D2C0; --field:#EFEBDF; --green-ok:#1E8E3E;
+    --radius:14px; --radius-sm:10px;
+    --shadow:0 2px 12px rgba(0,0,0,.08);
+    --transition:all .2s cubic-bezier(.4,0,.2,1);
   }
-  *{box-sizing:border-box;}
-  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--chalk); color:var(--ink);}
-  #app{max-width:480px; margin:0 auto; min-height:100vh; background:var(--chalk); position:relative; padding-bottom:70px;}
-  .header{background:var(--pitch); padding:12px 16px 10px; position:sticky; top:0; z-index:20; box-shadow:0 2px 8px rgba(0,0,0,.2);}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--chalk); color:var(--ink); overscroll-behavior:none;
+  }
+  #app{max-width:480px; margin:0 auto; min-height:100vh; background:var(--chalk); position:relative; padding-bottom:76px;}
+
+  /* ---------- HEADER ---------- */
+  .header{
+    background:linear-gradient(180deg, var(--pitch) 0%, var(--pitch-dark) 100%);
+    padding:14px 16px 12px; position:sticky; top:0; z-index:20;
+    box-shadow:0 4px 16px rgba(0,0,0,.25);
+  }
   .score-row{display:flex; align-items:center; justify-content:space-between; gap:8px;}
-  .team-name{flex:1; min-width:0; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--chalk); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;}
+  .team-name{
+    flex:1; min-width:0; font-size:15px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--chalk); white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; display:block;
+  }
   .team-name.right{text-align:right;}
-  .score-box{display:flex; align-items:baseline; gap:4px; background:#08281D; border:1px solid var(--pitch-line); border-radius:6px; padding:2px 12px; flex-shrink:0;}
-  .score-num{font-family:'Courier New',monospace; font-size:24px; font-weight:800;}
+  .score-box{
+    display:flex; align-items:baseline; gap:6px; background:rgba(0,0,0,.35);
+    border:1px solid var(--pitch-line); border-radius:var(--radius-sm);
+    padding:4px 14px; flex-shrink:0; backdrop-filter:blur(4px);
+  }
+  .score-num{font-family:'Courier New',monospace; font-size:28px; font-weight:800; line-height:1;}
   .score-num.amber{color:var(--amber);}
   .score-num.chalk{color:var(--chalk);}
-  .score-dash{color:var(--chalk); opacity:.4; font-size:16px; font-weight:700;}
-  .edit-btn{display:flex; align-items:center; gap:4px; background:none; border:none; color:var(--chalk); font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; padding:0; max-width:100%;}
-  .edit-btn span.name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:6.5rem; display:inline-block;}
-  .side-toggle{display:flex; gap:6px; margin-top:10px;}
-  .side-btn{flex:1; padding:5px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; border-radius:6px; border:1px solid var(--pitch-line); background:transparent; color:var(--chalk); opacity:.7; cursor:pointer;}
-  .side-btn.active{background:var(--amber); color:var(--pitch); opacity:1; border-color:var(--amber);}
-  .action-row{display:flex; gap:6px; margin-top:6px;}
-  .btn-finish{flex:1; background:var(--amber); color:var(--pitch); border:none; border-radius:8px; padding:7px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer;}
-  .btn-archive-icon{background:transparent; border:1px solid var(--pitch-line); color:var(--chalk); border-radius:8px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer;}
+  .score-dash{color:var(--chalk); opacity:.35; font-size:18px; font-weight:700;}
+  .edit-btn{
+    display:flex; align-items:center; gap:4px; background:none; border:none;
+    color:var(--chalk); font-size:15px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.04em; cursor:pointer; padding:0; max-width:100%;
+  }
+  .edit-btn .name{
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    max-width:6.5rem; display:inline-block;
+  }
+  .edit-btn .pencil{font-size:12px; opacity:.6;}
 
-  .tab-content{padding:12px 16px 90px;}
-  .card{background:var(--chalk); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:14px;}
-  .card.soft{background:#EDEAE2;}
-  .field-row{display:flex; gap:6px; margin-bottom:8px;}
-  .field{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
-  .field label{font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--ink); opacity:.55;}
-  .field input{width:100%; border:1px solid var(--border); background:var(--field); border-radius:6px; padding:6px 4px; font-size:16px; font-weight:700; text-align:center; outline:none;}
-  .field input:disabled{opacity:.6; background:var(--border);}
-  .field-error{font-size:9px; font-weight:700; color:var(--red); min-height:11px; margin-top:2px;}
-  .hint{font-size:10px; font-weight:600; opacity:.5; margin:0 0 8px;}
-  .btn-primary{width:100%; background:var(--pitch); color:var(--chalk); border:none; border-radius:8px; padding:9px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;}
-  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
-  .ventana-row{display:flex; gap:6px; margin-bottom:8px;}
-  .ventana-btn{flex:1; padding:6px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:6px; border:2px solid transparent; cursor:pointer;}
-  .type-row{display:flex; gap:6px; margin-bottom:10px;}
-  .type-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px; background:var(--field); border-radius:6px; border:2px solid transparent; cursor:pointer;}
-  .type-btn span.label{font-size:9px; font-weight:700; text-transform:uppercase; opacity:.75;}
-  .card-chip{display:inline-block; width:12px; height:16px; border-radius:2px; vertical-align:middle;}
-  .card-chip.double{position:relative; width:18px;}
-  .card-chip.double .a{position:absolute; left:0; transform:rotate(-6deg);}
-  .card-chip.double .b{position:absolute; left:6px; transform:rotate(6deg);}
+  .side-toggle{display:flex; gap:8px; margin-top:12px;}
+  .side-btn{
+    flex:1; padding:7px 4px; font-size:10px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.03em; border-radius:8px; border:1px solid var(--pitch-line);
+    background:transparent; color:var(--chalk); opacity:.6; cursor:pointer;
+    transition:var(--transition);
+  }
+  .side-btn.active{
+    background:var(--amber); color:var(--pitch); opacity:1;
+    border-color:var(--amber); box-shadow:0 2px 8px rgba(242,183,5,.35);
+  }
+  .action-row{display:flex; gap:8px; margin-top:8px;}
+  .btn-finish{
+    flex:1; background:var(--amber); color:var(--pitch); border:none;
+    border-radius:10px; padding:10px; font-size:13px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.03em; cursor:pointer;
+    box-shadow:0 3px 10px rgba(242,183,5,.3); transition:var(--transition);
+  }
+  .btn-finish:active{transform:scale(.97);}
+  .btn-archive-icon{
+    background:rgba(255,255,255,.08); border:1px solid var(--pitch-line);
+    color:var(--chalk); border-radius:10px; padding:10px 14px;
+    font-size:13px; font-weight:800; cursor:pointer; transition:var(--transition);
+    display:flex; align-items:center; gap:5px;
+  }
+  .btn-archive-icon:active{transform:scale(.97);}
+  .archive-count{
+    background:var(--amber); color:var(--pitch); border-radius:20px;
+    padding:1px 6px; font-size:10px; font-weight:800;
+  }
 
-  .empty{text-align:center; padding:24px 16px; opacity:.4; font-size:12px;}
-  .group-header{display:flex; align-items:center; gap:6px; margin-bottom:4px;}
+  /* ---------- CONTENT ---------- */
+  .tab-content{padding:14px 16px 100px; animation:fadeIn .25s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{
+    background:#fff; border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; margin-bottom:16px; box-shadow:var(--shadow);
+  }
+  .card.soft{background:var(--field); box-shadow:none;}
+
+  .field-row{display:flex; gap:8px; margin-bottom:10px;}
+  .field{flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;}
+  .field label{
+    font-size:9px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--ink); opacity:.5;
+  }
+  .field input{
+    width:100%; border:1.5px solid var(--border); background:var(--field);
+    border-radius:10px; padding:10px 6px; font-size:17px; font-weight:800;
+    text-align:center; outline:none; transition:var(--transition);
+    font-family:inherit; color:var(--ink);
+  }
+  .field input:focus{
+    border-color:var(--pitch); background:#fff;
+    box-shadow:0 0 0 3px rgba(11,61,46,.12);
+  }
+  .field input:disabled{opacity:.5; background:var(--border);}
+  .field-error{font-size:9px; font-weight:700; color:var(--red); min-height:12px; margin-top:2px;}
+  .hint{font-size:10px; font-weight:600; opacity:.5; margin:0 0 10px; line-height:1.4;}
+
+  .btn-primary{
+    width:100%; background:var(--pitch); color:var(--chalk); border:none;
+    border-radius:11px; padding:12px; font-size:13px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.04em; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:var(--transition); box-shadow:0 3px 10px rgba(11,61,46,.25);
+  }
+  .btn-primary:active:not(:disabled){transform:scale(.98);}
+  .btn-primary:disabled{opacity:.35; cursor:not-allowed; box-shadow:none;}
+
+  /* ---------- VENTANA / TYPE BUTTONS ---------- */
+  .ventana-row{display:flex; gap:6px; margin-bottom:12px;}
+  .ventana-btn{
+    flex:1; padding:9px 4px; font-size:11px; font-weight:800;
+    text-transform:uppercase; border-radius:9px; border:2px solid transparent;
+    cursor:pointer; transition:var(--transition);
+  }
+  .ventana-btn:active{transform:scale(.96);}
+  .type-row{display:flex; gap:8px; margin-bottom:14px;}
+  .type-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:10px 6px; background:var(--field); border-radius:11px;
+    border:2px solid transparent; cursor:pointer; transition:var(--transition);
+  }
+  .type-btn:active{transform:scale(.96);}
+  .type-btn span.label{font-size:9px; font-weight:800; text-transform:uppercase; opacity:.7;}
+  .card-chip{
+    display:inline-block; width:13px; height:18px; border-radius:2.5px;
+    vertical-align:middle; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .card-chip.double{position:relative; width:20px;}
+  .card-chip.double .a{position:absolute; left:0; transform:rotate(-8deg);}
+  .card-chip.double .b{position:absolute; left:8px; transform:rotate(8deg);}
+
+  /* ---------- LISTS ---------- */
+  .empty{text-align:center; padding:32px 16px; opacity:.35; font-size:13px; font-weight:600;}
+  .group-header{display:flex; align-items:center; gap:8px; margin-bottom:6px; padding-left:2px;}
   .dot{width:10px; height:10px; border-radius:50%; flex-shrink:0; display:inline-block;}
-  .group-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;}
-  .group-divider{border-top:2px solid var(--border); margin-top:4px; padding-top:12px;}
-  .event-row{display:flex; align-items:center; justify-content:space-between; padding:6px 0;}
-  .event-left{display:flex; align-items:center; gap:8px;}
-  .minute-badge{font-family:'Courier New',monospace; font-size:11px; font-weight:700; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px;}
-  .event-text{font-size:14px; font-weight:600;}
-  .del-btn{background:none; border:none; color:var(--ink); opacity:.35; cursor:pointer; padding:4px; font-size:15px;}
+  .group-label{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em;}
+  .group-divider{border-top:2px solid var(--border); margin-top:8px; padding-top:14px;}
 
-  .bottom-nav{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; display:flex; background:var(--pitch); border-top:1px solid var(--pitch-line); z-index:20;}
-  .nav-btn{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:8px 0; background:none; border:none; cursor:pointer; position:relative;}
-  .nav-icon{font-size:16px; line-height:1; opacity:.55;}
-  .nav-btn.active .nav-icon{opacity:1;}
-  .nav-label{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:#5A6E64;}
+  .event-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 10px; background:#fff; border:1px solid var(--border);
+    border-radius:10px; margin-bottom:6px; transition:var(--transition);
+  }
+  .event-row:active{background:var(--field);}
+  .event-left{display:flex; align-items:center; gap:10px; min-width:0;}
+  .minute-badge{
+    font-family:'Courier New',monospace; font-size:12px; font-weight:800;
+    background:var(--pitch); color:var(--amber); padding:3px 8px;
+    border-radius:6px; flex-shrink:0;
+  }
+  .event-text{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .del-btn{
+    background:none; border:none; color:var(--ink); opacity:.3;
+    cursor:pointer; padding:6px; font-size:16px; transition:var(--transition);
+    border-radius:8px; flex-shrink:0;
+  }
+  .del-btn:active{opacity:.9; background:rgba(198,54,47,.1);}
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottom-nav{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:480px; display:flex; background:var(--pitch-dark);
+    border-top:1px solid var(--pitch-line); z-index:20;
+    padding-bottom:env(safe-area-inset-bottom, 0);
+  }
+  .nav-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:4px; padding:10px 0 12px; background:none;
+    border:none; cursor:pointer; position:relative; transition:var(--transition);
+  }
+  .nav-btn:active{background:rgba(255,255,255,.05);}
+  .nav-icon{font-size:18px; line-height:1; opacity:.4; transition:var(--transition);}
+  .nav-btn.active .nav-icon{opacity:1; transform:translateY(-1px);}
+  .nav-label{
+    font-size:10px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.03em; color:#5A6E64; transition:var(--transition);
+  }
   .nav-btn.active .nav-label{color:var(--chalk);}
-  .nav-badge{position:absolute; top:2px; right:28%; min-width:15px; height:15px; border-radius:50%; background:var(--amber); color:var(--pitch); font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 3px;}
+  .nav-badge{
+    position:absolute; top:4px; right:22%; min-width:16px; height:16px;
+    border-radius:50%; background:var(--amber); color:var(--pitch);
+    font-size:9px; font-weight:800; display:flex; align-items:center;
+    justify-content:center; padding:0 4px; box-shadow:0 2px 6px rgba(242,183,5,.4);
+  }
 
-  .resumen-header{background:var(--pitch); padding:12px 16px; display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:20;}
-  .back-btn{background:none; border:none; color:var(--chalk); font-size:20px; cursor:pointer; padding:2px; line-height:1;}
-  .resumen-title{font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--chalk);}
-  .resumen-body{padding:16px; max-width:480px; margin:0 auto;}
-  .score-card{background:var(--pitch); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center;}
-  .score-card .label{font-size:11px; font-weight:700; text-transform:uppercase; color:var(--chalk); opacity:.7; margin-bottom:4px;}
-  .score-card .row{display:flex; align-items:center; justify-content:center; gap:12px;}
-  .score-card .side{font-size:12px; font-weight:700; text-transform:uppercase; color:var(--chalk); max-width:5.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .score-card .sublabel{font-size:10px; font-weight:600; color:var(--chalk); opacity:.5; margin-top:4px;}
-  .section{margin-bottom:16px;}
-  .section h3{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; opacity:.6; margin:0 0 8px;}
-  .section .empty-line{font-size:12px; opacity:.4; margin:0;}
-  .group-box{border:1px solid var(--border); border-radius:12px; overflow:hidden;}
-  .group-box .g-head{padding:6px 12px;}
-  .group-box .g-head span{font-size:10px; font-weight:700; text-transform:uppercase;}
-  .group-box .g-body{padding:6px 12px; background:var(--chalk);}
-  .group-box .g-body div{font-size:14px; font-weight:600; padding:2px 0;}
-  .list-box{border:1px solid var(--border); border-radius:12px; padding:6px 12px; background:var(--chalk);}
-  .list-box div{font-size:14px; font-weight:600; padding:2px 0;}
-  .archive-btn{width:100%; margin-top:8px; background:var(--amber); color:var(--pitch); border:none; border-radius:8px; padding:10px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; cursor:pointer;}
-  .archive-label{font-size:11px; font-weight:600; opacity:.5; margin:0 0 12px;}
+  /* ---------- RESUMEN ---------- */
+  .resumen-header{
+    background:linear-gradient(180deg, var(--pitch) 0%, var(--pitch-dark) 100%);
+    padding:14px 16px; display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; z-index:20; box-shadow:0 4px 16px rgba(0,0,0,.2);
+  }
+  .back-btn{
+    background:rgba(255,255,255,.08); border:none; color:var(--chalk);
+    font-size:18px; cursor:pointer; padding:6px 12px; line-height:1;
+    border-radius:9px; transition:var(--transition);
+  }
+  .back-btn:active{background:rgba(255,255,255,.2);}
+  .resumen-title{
+    font-size:15px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--chalk);
+  }
+  .resumen-body{padding:16px; max-width:480px; margin:0 auto; animation:fadeIn .3s ease;}
+  .score-card{
+    background:linear-gradient(135deg, var(--pitch) 0%, var(--pitch-dark) 100%);
+    border-radius:var(--radius); padding:18px 14px; margin-bottom:20px;
+    text-align:center; box-shadow:0 6px 20px rgba(11,61,46,.3);
+  }
+  .score-card .label{
+    font-size:11px; font-weight:800; text-transform:uppercase;
+    color:var(--chalk); opacity:.6; margin-bottom:8px; letter-spacing:.05em;
+  }
+  .score-card .row{display:flex; align-items:center; justify-content:center; gap:14px;}
+  .score-card .side{
+    font-size:13px; font-weight:800; text-transform:uppercase;
+    color:var(--chalk); max-width:5.5rem; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;
+  }
+  .score-card .sublabel{
+    font-size:10px; font-weight:600; color:var(--chalk);
+    opacity:.45; margin-top:8px;
+  }
+  .section{margin-bottom:20px;}
+  .section h3{
+    font-size:12px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.04em; opacity:.55; margin:0 0 10px;
+  }
+  .section .empty-line{font-size:13px; opacity:.35; margin:0; font-weight:600;}
+  .group-box{border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow);}
+  .group-box .g-head{padding:8px 14px;}
+  .group-box .g-head span{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.03em;}
+  .group-box .g-body{padding:8px 14px; background:#fff;}
+  .group-box .g-body div{font-size:14px; font-weight:600; padding:3px 0;}
+  .list-box{border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px; background:#fff; box-shadow:var(--shadow);}
+  .list-box div{font-size:14px; font-weight:600; padding:3px 0;}
+  .archive-btn{
+    width:100%; margin-top:10px; background:var(--amber); color:var(--pitch);
+    border:none; border-radius:11px; padding:14px; font-size:13px;
+    font-weight:800; text-transform:uppercase; letter-spacing:.04em;
+    cursor:pointer; box-shadow:0 4px 14px rgba(242,183,5,.35);
+    transition:var(--transition);
+  }
+  .archive-btn:active{transform:scale(.98);}
+  .archive-label{font-size:11px; font-weight:600; opacity:.5; margin:0 0 14px;}
 
-  .archivo-item{width:100%; display:flex; align-items:center; justify-content:space-between; background:var(--field); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; cursor:pointer; text-align:left;}
-  .archivo-item .main{font-size:14px; font-weight:700;}
-  .archivo-item .sub{font-size:11px; opacity:.5; margin-top:2px;}
+  /* ---------- ARCHIVO ---------- */
+  .archivo-item{
+    width:100%; display:flex; align-items:center; justify-content:space-between;
+    background:#fff; border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; margin-bottom:10px; cursor:pointer; text-align:left;
+    box-shadow:var(--shadow); transition:var(--transition);
+  }
+  .archivo-item:active{transform:scale(.98); background:var(--field);}
+  .archivo-item .main{font-size:14px; font-weight:800;}
+  .archivo-item .sub{font-size:11px; opacity:.5; margin-top:3px;}
+  .archivo-item .arrow{opacity:.3; font-size:18px;}
 
-  .player-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border);}
+  /* ---------- PLAYER ROWS ---------- */
+  .player-row{
+    display:flex; align-items:center; gap:8px; padding:9px 4px;
+    border-bottom:1px solid var(--border); transition:var(--transition);
+  }
   .player-row:last-child{border-bottom:none;}
-  .player-num{font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0;}
+  .player-num{
+    font-family:'Courier New',monospace; font-weight:800; font-size:12px;
+    background:var(--pitch); color:var(--amber); padding:3px 7px;
+    border-radius:6px; min-width:30px; text-align:center; flex-shrink:0;
+  }
   .player-name{flex:1; font-size:14px; font-weight:600; min-width:0;}
   .player-name.strike{text-decoration:line-through; opacity:.55;}
-  .sub-in{font-size:12px; font-weight:700; color:var(--green-ok); flex-shrink:0;}
-  .player-num.editable, .player-name.editable{cursor:pointer;}
-  .player-num.editable{border-bottom:1px dashed var(--pitch-line);}
-  .player-name.editable:not(.strike){border-bottom:1px dashed var(--border);}
-  button.player-num{all:unset; font-family:'Courier New',monospace; font-weight:700; font-size:12px; background:var(--pitch); color:var(--amber); padding:2px 6px; border-radius:4px; min-width:26px; text-align:center; flex-shrink:0; cursor:pointer; border-bottom:1px dashed var(--amber);}
-  button.player-name{all:unset; flex:1; font-size:14px; font-weight:600; min-width:0; cursor:pointer; text-align:left; border-bottom:1px dashed var(--border);}
+  .sub-in{font-size:12px; font-weight:800; color:var(--green-ok); flex-shrink:0;}
+  button.player-num{
+    all:unset; font-family:'Courier New',monospace; font-weight:800;
+    font-size:12px; background:var(--pitch); color:var(--amber);
+    padding:3px 7px; border-radius:6px; min-width:30px; text-align:center;
+    flex-shrink:0; cursor:pointer; border-bottom:2px dashed var(--amber);
+  }
+  button.player-name{
+    all:unset; flex:1; font-size:14px; font-weight:600; min-width:0;
+    cursor:pointer; text-align:left; border-bottom:1.5px dashed var(--border);
+    padding-bottom:1px;
+  }
   button.player-name.strike{text-decoration:line-through; opacity:.55;}
-  .inline-edit-num{width:3.2rem; font-family:'Courier New',monospace; font-weight:700; font-size:13px; text-align:center; padding:3px 4px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink); flex-shrink:0;}
-  .inline-edit-name{flex:1; min-width:0; font-size:14px; font-weight:600; padding:3px 6px; border:1px solid var(--pitch); border-radius:4px; background:#fff; color:var(--ink);}
-  .drag-handle{background:none; border:none; color:var(--ink); opacity:.4; font-size:16px; padding:2px 4px; cursor:pointer; flex-shrink:0; line-height:1;}
-  .player-row.dragging{background:var(--field); box-shadow:0 6px 14px rgba(0,0,0,.18); border-radius:8px; opacity:.95;}
-  .drag-handle{touch-action:none;}
-  .drop-indicator{height:3px; background:var(--amber); border-radius:2px; margin:2px 0;}
+  .inline-edit-num{
+    width:3.2rem; font-family:'Courier New',monospace; font-weight:800;
+    font-size:14px; text-align:center; padding:5px 4px; border:2px solid var(--pitch);
+    border-radius:8px; background:#fff; color:var(--ink); flex-shrink:0;
+  }
+  .inline-edit-name{
+    flex:1; min-width:0; font-size:14px; font-weight:600; padding:5px 8px;
+    border:2px solid var(--pitch); border-radius:8px; background:#fff; color:var(--ink);
+  }
+  .drag-handle{
+    background:none; border:none; color:var(--ink); opacity:.3;
+    font-size:18px; padding:2px 6px; cursor:pointer; flex-shrink:0;
+    line-height:1; touch-action:none; border-radius:6px;
+  }
+  .drag-handle:active{opacity:.8; background:var(--field);}
+  .player-row.dragging{
+    background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.2);
+    border-radius:10px; opacity:.95; z-index:10; position:relative;
+  }
+  .drop-indicator{
+    height:3px; background:var(--amber); border-radius:2px; margin:3px 0;
+    box-shadow:0 0 8px rgba(242,183,5,.6); animation:pulse .8s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.5;}}
+
+  /* ---------- TOAST ---------- */
+  .toast{
+    position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--pitch-dark); color:var(--chalk); padding:10px 20px;
+    border-radius:10px; font-size:13px; font-weight:700; opacity:0;
+    pointer-events:none; transition:all .3s ease; z-index:100;
+    box-shadow:0 4px 16px rgba(0,0,0,.3); max-width:90%; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:50;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    animation:fadeIn .2s ease; backdrop-filter:blur(2px);
+  }
+  .modal{
+    background:var(--chalk); border-radius:var(--radius); padding:20px;
+    width:100%; max-width:340px; box-shadow:0 10px 40px rgba(0,0,0,.3);
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(20px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal h3{margin:0 0 14px; font-size:15px; font-weight:800; text-transform:uppercase; letter-spacing:.03em;}
+  .modal input{
+    width:100%; border:1.5px solid var(--border); background:#fff;
+    border-radius:10px; padding:12px; font-size:16px; font-weight:700;
+    outline:none; margin-bottom:14px; font-family:inherit;
+  }
+  .modal input:focus{border-color:var(--pitch); box-shadow:0 0 0 3px rgba(11,61,46,.12);}
+  .modal-actions{display:flex; gap:8px;}
+  .modal-actions button{
+    flex:1; padding:11px; border-radius:10px; font-size:13px; font-weight:800;
+    text-transform:uppercase; letter-spacing:.03em; cursor:pointer;
+    border:none; transition:var(--transition);
+  }
+  .modal-actions .cancel{background:var(--field); color:var(--ink);}
+  .modal-actions .confirm{background:var(--pitch); color:var(--chalk);}
+  .modal-actions button:active{transform:scale(.97);}
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div class="toast" id="toast"></div>
 <script>
 (function(){
   const HOME_NAME = "C.D. Raíces";
@@ -147,6 +400,13 @@
   }
   function tipoLabel(t){ return t==='amarilla'?'Amarilla': t==='roja'?'Roja':'2ª amarilla'; }
 
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
   let state = {
     view: 'match', tab: 'alineacion',
     awayName: 'Rival', esLocal: true, observaciones: '',
@@ -154,7 +414,7 @@
     archivedMatches: [], openArchiveId: null, plantilla: [],
   };
   let alineacionForm = { numero: '', nombre: '' };
-  let editingPlayer = null; // { id, field: 'num' | 'name' }
+  let editingPlayer = null;
   let cambiosForm = { ventana: 'descanso', minuto: '', rows: [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}] };
   let tarjetasForm = { dorsal: '', tipo: 'amarilla', minuto: '' };
   let golesForm = { dorsal: '' };
@@ -245,11 +505,12 @@
   function renderHeader(){
     const homeScore = state.goals.length, awayScore = state.rivalGoals.length;
     const homeSpan = `<span class="team-name">${esc(HOME_NAME)}</span>`;
-    const awayBtn = `<button class="edit-btn" id="edit-away-btn"><span class="name">${esc(state.awayName)}</span> ✎</button>`;
+    const awayBtn = `<button class="edit-btn" id="edit-away-btn"><span class="name">${esc(state.awayName)}</span> <span class="pencil">✎</span></button>`;
     const leftName = state.esLocal ? homeSpan : awayBtn;
     const rightName = state.esLocal ? awayBtn : homeSpan;
     const leftScore = state.esLocal ? homeScore : awayScore;
     const rightScore = state.esLocal ? awayScore : homeScore;
+    const archiveCount = state.archivedMatches.length;
     return `
     <div class="header">
       <div class="score-row">
@@ -267,7 +528,7 @@
       </div>
       <div class="action-row">
         <button class="btn-finish" id="btn-finish">📋 Finalizar partido</button>
-        <button class="btn-archive-icon" id="btn-open-archive">🗂 ${state.archivedMatches.length>0?state.archivedMatches.length:''}</button>
+        <button class="btn-archive-icon" id="btn-open-archive">🗂${archiveCount>0?`<span class="archive-count">${archiveCount}</span>`:''}</button>
       </div>
     </div>`;
   }
@@ -297,743 +558,4 @@
 
   // ---------- Alineación ----------
   function renderPlayerLine(p, salidas, roster, readOnly, entradas){
-    const rosterList = roster || state.roster;
-    const delBtn = readOnly ? '' : `<button class="del-btn" data-del-player="${p.id}">🗑</button>`;
-    const handleBtn = readOnly ? '' : `<button class="drag-handle" type="button" data-drag="${p.id}">⠿</button>`;
-    const editingNum = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='num';
-    const editingName = !readOnly && editingPlayer && editingPlayer.id===p.id && editingPlayer.field==='name';
-
-    const numHtml = editingNum
-      ? `<input type="text" inputmode="numeric" pattern="[0-9]*" class="inline-edit-num" data-inline-num="${p.id}" value="${esc(p.numero)}" maxlength="3">`
-      : (readOnly
-          ? `<span class="player-num">${esc(p.numero)}</span>`
-          : `<button class="player-num" type="button" data-edit-num="${p.id}">${esc(p.numero)}</button>`);
-
-    function nameHtml(prefix, strike, suffix){
-      if(editingName) return `<input type="text" class="inline-edit-name" data-inline-name="${p.id}" value="${esc(p.nombre)}" maxlength="24">`;
-      const content = `${prefix||''}${esc(p.nombre)}${suffix?` <span style="font-weight:400;opacity:.6;">${suffix}</span>`:''}`;
-      if(readOnly) return `<span class="player-name${strike?' strike':''}">${content}</span>`;
-      return `<button class="player-name${strike?' strike':''}" type="button" data-edit-name="${p.id}">${content}</button>`;
-    }
-
-    const sub = salidas[p.numero];
-    if(sub){
-      const entraPlayer = rosterList.find(r=>r.numero===sub.entra);
-      const entraLabel = entraPlayer ? esc(entraPlayer.nombre) : `Nº ${esc(sub.entra)}`;
-      return `<div class="player-row" data-player-id="${p.id}">
-        ${handleBtn}
-        ${numHtml}
-        ${nameHtml('↓ ', true)}
-        <span class="sub-in">↑ ${entraLabel}</span>
-        ${delBtn}
-      </div>`;
-    }
-    const cameOn = entradas ? entradas[p.numero] : null;
-    if(cameOn){
-      return `<div class="player-row" data-player-id="${p.id}">
-        ${handleBtn}
-        ${numHtml}
-        ${nameHtml('', true, `en el campo, min ${cameOn.minuto}'`)}
-        ${delBtn}
-      </div>`;
-    }
-    return `<div class="player-row" data-player-id="${p.id}">
-      ${handleBtn}
-      ${numHtml}
-      ${nameHtml('', false)}
-      ${delBtn}
-    </div>`;
-  }
-  function renderAlineacionList(){
-    if(state.roster.length===0) return `<div class="empty">Todavía no has añadido jugadores.</div>`;
-    const salidas = {}, entradas = {};
-    state.subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
-    const titulares = state.roster.slice(0,11);
-    const suplentes = state.roster.slice(11,18);
-    const noConvocados = state.roster.slice(18);
-    let html = `<div class="group-header"><span class="group-label" style="color:var(--pitch)">Titulares (${titulares.length}/11)</span></div>`;
-    html += titulares.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('');
-    if(suplentes.length>0){
-      html += `<div class="group-divider">
-        <div class="group-header"><span class="group-label" style="color:var(--rival)">Suplentes (${suplentes.length}/7)</span></div>
-        ${suplentes.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
-      </div>`;
-    }
-    if(noConvocados.length>0){
-      html += `<div class="group-divider">
-        <div class="group-header"><span class="group-label" style="color:var(--ink); opacity:.45;">No convocados</span></div>
-        ${noConvocados.map(p=>renderPlayerLine(p, salidas, state.roster, false, entradas)).join('')}
-      </div>`;
-    }
-    return html;
-  }
-  function renderAlineacionTab(){
-    return `
-    <div class="tab-content">
-      <div class="card">
-        <div class="field-row">
-          <div class="field" style="flex:0 0 4.5rem;"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="al-numero" value="${esc(alineacionForm.numero)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <div class="field"><label>Nombre</label><input type="text" id="al-nombre" value="${esc(alineacionForm.nombre)}" placeholder="Nombre del jugador" maxlength="24" onfocus="this.select()"></div>
-        </div>
-        <button class="btn-primary" id="btn-add-jugador" disabled>+ Añadir jugador</button>
-      </div>
-      <p class="hint">Los 11 primeros son titulares, los 7 siguientes suplentes (puede haber menos), y el resto queda como no convocados. Mantén pulsado ⠿ y desliza para reordenar.</p>
-      <div id="alineacion-list">${renderAlineacionList()}</div>
-    </div>`;
-  }
-  function attachAlineacionDrag(){
-    const listEl = document.getElementById('alineacion-list');
-    if(!listEl) return;
-    listEl.querySelectorAll('.drag-handle').forEach(handle=>{
-      handle.addEventListener('pointerdown', (e)=>{
-        e.preventDefault();
-        const row = handle.closest('.player-row');
-        if(!row) return;
-        const playerId = row.dataset.playerId;
-        handle.setPointerCapture(e.pointerId);
-
-        const rows = Array.from(listEl.querySelectorAll('.player-row[data-player-id]'));
-        const positions = rows.map(r=>{
-          const rect = r.getBoundingClientRect();
-          return { id: r.dataset.playerId, center: rect.top + rect.height/2 };
-        }).filter(p=>p.id!==playerId);
-
-        const rowRect = row.getBoundingClientRect();
-        const grabOffset = e.clientY - rowRect.top;
-        row.classList.add('dragging');
-
-        const indicatorEl = document.createElement('div');
-        indicatorEl.className = 'drop-indicator';
-
-        let targetIndex = 0;
-
-        function computeTargetIndex(y){
-          const floatCenter = y - grabOffset + rowRect.height/2;
-          for(let i=0;i<positions.length;i++){
-            if(floatCenter < positions[i].center) return i;
-          }
-          return positions.length;
-        }
-        function placeIndicator(idx){
-          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
-          const domOthers = rows.filter(r=>r.dataset.playerId!==playerId);
-          if(idx >= domOthers.length){
-            if(domOthers.length) domOthers[domOthers.length-1].after(indicatorEl);
-            else listEl.appendChild(indicatorEl);
-          } else {
-            domOthers[idx].before(indicatorEl);
-          }
-          targetIndex = idx;
-        }
-
-        placeIndicator(computeTargetIndex(e.clientY));
-
-        function onMove(ev){
-          row.style.transform = `translateY(${ev.clientY - grabOffset - rowRect.top}px)`;
-          placeIndicator(computeTargetIndex(ev.clientY));
-        }
-        function onUp(){
-          handle.releasePointerCapture(e.pointerId);
-          document.removeEventListener('pointermove', onMove);
-          document.removeEventListener('pointerup', onUp);
-          row.classList.remove('dragging');
-          row.style.transform = '';
-          if(indicatorEl.parentNode) indicatorEl.parentNode.removeChild(indicatorEl);
-
-          const others = state.roster.filter(p=>p.id!==playerId);
-          const moving = state.roster.find(p=>p.id===playerId);
-          if(moving){
-            const idx = Math.max(0, Math.min(targetIndex, others.length));
-            others.splice(idx, 0, moving);
-            state.roster = others;
-            saveMatch();
-          }
-          render();
-        }
-        document.addEventListener('pointermove', onMove);
-        document.addEventListener('pointerup', onUp);
-      });
-    });
-  }
-  function attachAlineacionEvents(){
-    const numero = document.getElementById('al-numero');
-    const nombre = document.getElementById('al-nombre');
-    const btnAdd = document.getElementById('btn-add-jugador');
-    if(numero && nombre && btnAdd){
-      function validate(){
-        alineacionForm.numero = numero.value; alineacionForm.nombre = nombre.value;
-        btnAdd.disabled = !(numero.value!=='' && nombre.value.trim()!=='');
-      }
-      numero.addEventListener('input', validate);
-      nombre.addEventListener('input', validate);
-      validate();
-      btnAdd.addEventListener('click', ()=>{
-        if(numero.value==='' || nombre.value.trim()==='') return;
-        const newId = uid();
-        state.roster.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
-        state.plantilla.push({id:newId, numero:numero.value, nombre:nombre.value.trim()});
-        savePlantilla();
-        saveMatch();
-        alineacionForm.numero=''; alineacionForm.nombre='';
-        render();
-      });
-    }
-    document.getElementById('alineacion-list').addEventListener('click',(e)=>{
-      const delBtn = e.target.closest('[data-del-player]');
-      if(delBtn){
-        state.roster = state.roster.filter(p=>p.id!==delBtn.dataset.delPlayer);
-        state.plantilla = state.plantilla.filter(p=>p.id!==delBtn.dataset.delPlayer);
-        savePlantilla(); saveMatch(); editingPlayer=null; render(); return;
-      }
-      const numBtn = e.target.closest('[data-edit-num]');
-      if(numBtn){ editingPlayer = {id:numBtn.dataset.editNum, field:'num'}; render(); return; }
-      const nameBtn = e.target.closest('[data-edit-name]');
-      if(nameBtn){ editingPlayer = {id:nameBtn.dataset.editName, field:'name'}; render(); return; }
-    });
-    attachAlineacionDrag();
-
-    if(editingPlayer){
-      const input = document.querySelector(`[data-inline-num="${editingPlayer.id}"], [data-inline-name="${editingPlayer.id}"]`);
-      if(input){
-        input.focus();
-        input.select();
-        const field = editingPlayer.field;
-        const playerId = editingPlayer.id;
-        let done = false;
-        const commit = ()=>{
-          if(done) return;
-          done = true;
-          const player = state.roster.find(p=>p.id===playerId);
-          if(player){
-            if(field==='num'){
-              const clean = input.value.replace(/[^0-9]/g,'').slice(0,3);
-              if(clean !== '') player.numero = clean;
-            } else {
-              const val = input.value.trim();
-              if(val !== '') player.nombre = val.slice(0,24);
-            }
-            saveMatch();
-            const pl = state.plantilla.find(p=>p.id===playerId);
-            if(pl){ pl.numero = player.numero; pl.nombre = player.nombre; savePlantilla(); }
-          }
-          editingPlayer = null;
-          render();
-        };
-        input.addEventListener('blur', commit);
-        input.addEventListener('keydown', (e)=>{
-          if(e.key==='Enter'){ commit(); }
-          if(e.key==='Escape'){ done = true; editingPlayer = null; render(); }
-        });
-      }
-    }
-  }
-
-  // ---------- Cambios ----------
-  function computeVentanaMinuto(subs){
-    const m = {};
-    subs.forEach(s=>{ if(m[s.ventana]===undefined) m[s.ventana]=s.minuto; });
-    return m;
-  }
-  function renderCambiosTab(){
-    const vm = computeVentanaMinuto(state.subs);
-    const locked = vm[cambiosForm.ventana];
-    const ventanaButtons = VENTANAS.map(v=>`
-      <button class="ventana-btn" data-vkey="${v.key}" style="background:${v.soft};color:${v.color};border-color:${cambiosForm.ventana===v.key?v.color:'transparent'}">${v.short}</button>
-    `).join('');
-    const hint = locked!==undefined ? `<p class="hint">Esta ventana ya está fijada en el minuto ${locked}'</p>` : '';
-    const rosterHint = state.roster.length===0 ? `<p class="hint" style="color:var(--red);">Añade primero la alineación para poder registrar cambios.</p>` : '';
-    const minutoValue = locked!==undefined ? locked : cambiosForm.minuto;
-
-    const rowsHtml = cambiosForm.rows.map((row, i)=>`
-      <div class="field-row" style="margin-bottom:2px;">
-        <div class="field">
-          ${i===0?'<label>Entra</label>':''}
-          <input type="text" inputmode="numeric" pattern="[0-9]*" class="cambio-entra" data-row="${i}" value="${esc(row.entra)}" placeholder="—" maxlength="3" onfocus="this.select()">
-        </div>
-        <div class="field">
-          ${i===0?'<label>Sale</label>':''}
-          <input type="text" inputmode="numeric" pattern="[0-9]*" class="cambio-sale" data-row="${i}" value="${esc(row.sale)}" placeholder="—" maxlength="3" onfocus="this.select()">
-        </div>
-      </div>
-      <div class="field-error" id="err-row-${i}" style="margin-bottom:6px;"></div>
-    `).join('');
-
-    return `
-    <div class="tab-content">
-      ${rosterHint}
-      <div class="card">
-        <div class="ventana-row">${ventanaButtons}</div>
-        <div id="ventana-hint">${hint}</div>
-        <div class="field-row" style="margin-bottom:10px;">
-          <div class="field" style="flex:0 0 6rem;"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="f-minuto" value="${esc(minutoValue)}" placeholder="—" maxlength="3" onfocus="this.select()" ${locked!==undefined?'disabled':''}></div>
-          <div class="field" style="justify-content:flex-end;"><span class="hint" style="margin:0;">Se aplica a los 3 cambios de abajo</span></div>
-        </div>
-        ${rowsHtml}
-        <button class="btn-primary" id="btn-add-cambio" disabled style="margin-top:4px;">+ Registrar cambios</button>
-      </div>
-      <div id="cambios-list">${renderCambiosList()}</div>
-    </div>`;
-  }
-  function renderCambiosList(){
-    const groups = VENTANAS.map(v=>({...v, items: state.subs.filter(s=>s.ventana===v.key).sort((a,b)=>Number(a.minuto)-Number(b.minuto))})).filter(g=>g.items.length>0);
-    if(groups.length===0) return `<div class="empty">Todavía no has registrado ningún cambio.</div>`;
-    return groups.map((g,gi)=>`
-      <div class="${gi>0?'group-divider':''}">
-        <div class="group-header"><span class="dot" style="background:${g.color}"></span><span class="group-label" style="color:${g.color}">${g.label}</span></div>
-        ${g.items.map(s=>`
-          <div class="event-row">
-            <div class="event-left">
-              <span class="minute-badge">${s.minuto}'</span>
-              <span class="event-text"><span style="color:var(--green-ok)">↑${s.entra}</span> <span style="color:var(--red)">↓${s.sale}</span></span>
-            </div>
-            <button class="del-btn" data-del-sub="${s.id}">🗑</button>
-          </div>`).join('')}
-      </div>
-    `).join('');
-  }
-  function attachCambiosEvents(){
-    document.querySelectorAll('.ventana-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        cambiosForm.ventana = btn.dataset.vkey;
-        render();
-      });
-    });
-    const fMinuto = document.getElementById('f-minuto');
-    const btnAdd = document.getElementById('btn-add-cambio');
-    const entraInputs = Array.from(document.querySelectorAll('.cambio-entra'));
-    const saleInputs = Array.from(document.querySelectorAll('.cambio-sale'));
-
-    function validateAll(){
-      const entrados = new Set(state.subs.map(s=>s.entra));
-      const salidos = new Set(state.subs.map(s=>s.sale));
-      const titularesNums = new Set(state.roster.slice(0,11).map(p=>p.numero));
-      const suplentesNums = new Set(state.roster.slice(11,18).map(p=>p.numero));
-      const convocadosNums = new Set([...titularesNums, ...suplentesNums]);
-      const seenEntra = new Set(), seenSale = new Set();
-      let anyValid = false, allOk = true;
-
-      cambiosForm.rows.forEach((row, i)=>{
-        const entra = row.entra, sale = row.sale;
-        let err = '';
-        if(entra==='' && sale===''){
-          // fila vacía, se ignora
-        } else if(entra==='' || sale===''){
-          err = 'Rellena entra y sale';
-        } else if(entra===sale){
-          err = 'No puede coincidir';
-        } else if(!convocadosNums.has(entra)){
-          err = 'Entra: no está convocado';
-        } else if(titularesNums.has(entra)){
-          err = 'Entra: un titular no puede entrar';
-        } else if(entrados.has(entra) || salidos.has(entra) || seenEntra.has(entra)){
-          err = 'Entra: ya usado';
-        } else if(!convocadosNums.has(sale)){
-          err = 'Sale: no está convocado';
-        } else if(salidos.has(sale) || seenSale.has(sale)){
-          err = 'Sale: ya salió';
-        } else if(suplentesNums.has(sale) && !entrados.has(sale)){
-          err = 'Sale: este suplente no ha entrado';
-        } else {
-          seenEntra.add(entra); seenSale.add(sale);
-          anyValid = true;
-        }
-        if(err) allOk = false;
-        const errEl = document.getElementById(`err-row-${i}`);
-        if(errEl) errEl.textContent = err;
-      });
-
-      const ok = anyValid && allOk && fMinuto.value !== '';
-      btnAdd.disabled = !ok;
-      return ok;
-    }
-
-    fMinuto.addEventListener('input', ()=>{ cambiosForm.minuto = fMinuto.value; validateAll(); });
-    entraInputs.forEach(inp=>{
-      inp.addEventListener('input', ()=>{
-        cambiosForm.rows[Number(inp.dataset.row)].entra = inp.value;
-        validateAll();
-      });
-    });
-    saleInputs.forEach(inp=>{
-      inp.addEventListener('input', ()=>{
-        cambiosForm.rows[Number(inp.dataset.row)].sale = inp.value;
-        validateAll();
-      });
-    });
-    validateAll();
-
-    btnAdd.addEventListener('click', ()=>{
-      if(!validateAll()) return;
-      const minuto = fMinuto.value;
-      let added = 0;
-      cambiosForm.rows.forEach(row=>{
-        if(row.entra!=='' && row.sale!==''){
-          state.subs.push({id:uid(), ventana:cambiosForm.ventana, entra:row.entra, sale:row.sale, minuto});
-          added++;
-        }
-      });
-      if(added===0) return;
-      saveMatch();
-      cambiosForm.rows = [{entra:'',sale:''},{entra:'',sale:''},{entra:'',sale:''}];
-      cambiosForm.minuto = '';
-      render();
-    });
-    document.getElementById('cambios-list').addEventListener('click', (e)=>{
-      const btn = e.target.closest('[data-del-sub]');
-      if(btn){ state.subs = state.subs.filter(s=>s.id!==btn.dataset.delSub); saveMatch(); render(); }
-    });
-  }
-
-  // ---------- Tarjetas ----------
-  function renderTarjetasTab(){
-    const tipos = [{key:'amarilla',label:'Amarilla'},{key:'doble',label:'2ª amarilla'},{key:'roja',label:'Roja'}];
-    const typeButtons = tipos.map(t=>`
-      <button class="type-btn" data-tipo="${t.key}" style="border-color:${tarjetasForm.tipo===t.key?(t.key==='roja'?'var(--red)':'var(--amber)'):'transparent'}">
-        ${cardChip(t.key)}
-        <span class="label">${t.label}</span>
-      </button>
-    `).join('');
-    return `
-    <div class="tab-content">
-      <div class="card">
-        <div class="type-row">${typeButtons}</div>
-        <div class="field-row">
-          <div class="field"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="t-dorsal" value="${esc(tarjetasForm.dorsal)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="t-minuto" value="${esc(tarjetasForm.minuto)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-        </div>
-        <button class="btn-primary" id="btn-add-tarjeta" disabled>+ Registrar tarjeta</button>
-      </div>
-      <div id="tarjetas-list">${renderTarjetasList()}</div>
-    </div>`;
-  }
-  function renderTarjetasList(){
-    if(state.cards.length===0) return `<div class="empty">Todavía no has registrado ninguna tarjeta.</div>`;
-    return [...state.cards].sort((a,b)=>Number(a.minuto)-Number(b.minuto)).map(c=>`
-      <div class="event-row">
-        <div class="event-left">
-          <span class="minute-badge">${c.minuto}'</span>
-          ${cardChip(c.tipo)}
-          <span class="event-text">Nº ${c.dorsal} <span style="font-weight:400;opacity:.5">· ${tipoLabel(c.tipo)}</span></span>
-        </div>
-        <button class="del-btn" data-del-card="${c.id}">🗑</button>
-      </div>
-    `).join('');
-  }
-  function attachTarjetasEvents(){
-    document.querySelectorAll('.type-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ tarjetasForm.tipo = btn.dataset.tipo; render(); });
-    });
-    const dorsal = document.getElementById('t-dorsal');
-    const minuto = document.getElementById('t-minuto');
-    const btnAdd = document.getElementById('btn-add-tarjeta');
-    function validate(){
-      tarjetasForm.dorsal = dorsal.value; tarjetasForm.minuto = minuto.value;
-      btnAdd.disabled = !(dorsal.value!=='' && minuto.value!=='');
-    }
-    dorsal.addEventListener('input', validate);
-    minuto.addEventListener('input', validate);
-    validate();
-    btnAdd.addEventListener('click', ()=>{
-      if(dorsal.value==='' || minuto.value==='') return;
-      state.cards.push({id:uid(), dorsal:dorsal.value, tipo:tarjetasForm.tipo, minuto:minuto.value});
-      saveMatch();
-      tarjetasForm.dorsal=''; tarjetasForm.minuto='';
-      render();
-    });
-    document.getElementById('tarjetas-list').addEventListener('click',(e)=>{
-      const btn = e.target.closest('[data-del-card]');
-      if(btn){ state.cards = state.cards.filter(c=>c.id!==btn.dataset.delCard); saveMatch(); render(); }
-    });
-  }
-
-  // ---------- Goles ----------
-  function renderGolesTab(){
-    return `
-    <div class="tab-content">
-      <div class="card">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;margin-bottom:8px;">⚽ Gol de ${esc(HOME_NAME)}</div>
-        <div class="field-row">
-          <div class="field"><label>Dorsal</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="g-dorsal" value="${esc(golesForm.dorsal)}" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="g-minuto" value="" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-        </div>
-        <button class="btn-primary" id="btn-add-gol" disabled>+ Registrar gol</button>
-      </div>
-      <div id="goles-list">${renderGolesList()}</div>
-      <div class="card soft" style="margin-top:16px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;margin-bottom:8px;">Gol del ${esc(state.awayName)}</div>
-        <div class="field-row" style="align-items:flex-end;">
-          <div class="field"><label>Minuto</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="gr-minuto" value="" placeholder="—" maxlength="3" onfocus="this.select()"></div>
-          <button class="btn-primary" id="btn-add-rival-gol" style="flex:0 0 auto;width:auto;padding:8px 18px;background:var(--rival);">+1 gol</button>
-        </div>
-      </div>
-      <div id="rival-goles-list">${renderRivalGolesList()}</div>
-    </div>`;
-  }
-  function renderGolesList(){
-    if(state.goals.length===0) return `<div class="empty">Tu equipo aún no ha marcado.</div>`;
-    return [...state.goals].sort((a,b)=>Number(a.minuto)-Number(b.minuto)).map(g=>`
-      <div class="event-row">
-        <div class="event-left"><span class="minute-badge">${g.minuto}'</span><span class="event-text">⚽ Nº ${g.dorsal}</span></div>
-        <button class="del-btn" data-del-goal="${g.id}">🗑</button>
-      </div>`).join('');
-  }
-  function renderRivalGolesList(){
-    if(state.rivalGoals.length===0) return '';
-    return [...state.rivalGoals].sort((a,b)=>Number(a.minuto)-Number(b.minuto)).map(g=>`
-      <div class="event-row">
-        <div class="event-left"><span class="minute-badge">${g.minuto}'</span><span class="event-text">Gol ${esc(state.awayName)}</span></div>
-        <button class="del-btn" data-del-rivalgoal="${g.id}">🗑</button>
-      </div>`).join('');
-  }
-  function attachGolesEvents(){
-    const dorsal = document.getElementById('g-dorsal');
-    const minuto = document.getElementById('g-minuto');
-    const btnAdd = document.getElementById('btn-add-gol');
-    function validate(){
-      golesForm.dorsal = dorsal.value;
-      btnAdd.disabled = !(dorsal.value!=='' && minuto.value!=='');
-    }
-    dorsal.addEventListener('input', validate);
-    minuto.addEventListener('input', validate);
-    validate();
-    btnAdd.addEventListener('click', ()=>{
-      if(dorsal.value==='' || minuto.value==='') return;
-      state.goals.push({id:uid(), dorsal:dorsal.value, minuto:minuto.value});
-      saveMatch();
-      golesForm.dorsal='';
-      render();
-    });
-    document.getElementById('goles-list').addEventListener('click',(e)=>{
-      const btn = e.target.closest('[data-del-goal]');
-      if(btn){ state.goals = state.goals.filter(g=>g.id!==btn.dataset.delGoal); saveMatch(); render(); }
-    });
-    const rMinuto = document.getElementById('gr-minuto');
-    const btnRival = document.getElementById('btn-add-rival-gol');
-    btnRival.addEventListener('click', ()=>{
-      if(rMinuto.value==='') return;
-      state.rivalGoals.push({id:uid(), minuto:rMinuto.value});
-      saveMatch();
-      render();
-    });
-    const rivalList = document.getElementById('rival-goles-list');
-    if(rivalList) rivalList.addEventListener('click',(e)=>{
-      const btn = e.target.closest('[data-del-rivalgoal]');
-      if(btn){ state.rivalGoals = state.rivalGoals.filter(g=>g.id!==btn.dataset.delRivalgoal); saveMatch(); render(); }
-    });
-  }
-
-  // ---------- Bottom nav ----------
-  function renderBottomNav(){
-    const items = [
-      {key:'alineacion', label:'Alineación', icon:'👥', count: state.roster.length},
-      {key:'cambios', label:'Cambios', icon:'⇄', count: state.subs.length},
-      {key:'tarjetas', label:'Tarjetas', icon:'🟨', count: state.cards.length},
-      {key:'goles', label:'Goles', icon:'⚽', count: state.goals.length + state.rivalGoals.length},
-      {key:'observaciones', label:'Notas', icon:'📝', count: state.observaciones.trim()!==''?1:0},
-    ];
-    return `<div class="bottom-nav">${items.map(it=>`
-      <button class="nav-btn ${state.tab===it.key?'active':''}" data-tab="${it.key}">
-        <span class="nav-icon">${it.icon}</span>
-        <span class="nav-label">${it.label}</span>
-        ${it.count>0?`<span class="nav-badge">${it.count}</span>`:''}
-      </button>
-    `).join('')}</div>`;
-  }
-  function attachBottomNavEvents(){
-    document.querySelectorAll('.nav-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ state.tab = btn.dataset.tab; editingPlayer = null; render(); });
-    });
-  }
-
-  // ---------- Observaciones ----------
-  function renderObservacionesTab(){
-    return `
-    <div class="tab-content">
-      <div class="card">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.6;display:block;margin-bottom:8px;">📝 Observaciones del partido</span>
-        <textarea id="obs-text" placeholder="Lesiones, incidencias, decisiones arbitrales raras, lo que quieras anotar..." style="width:100%; min-height:180px; border:1px solid var(--border); background:var(--field); border-radius:8px; padding:10px; font-size:14px; font-family:inherit; color:var(--ink); resize:vertical;">${esc(state.observaciones)}</textarea>
-      </div>
-    </div>`;
-  }
-  function attachObservacionesEvents(){
-    const txt = document.getElementById('obs-text');
-    txt.addEventListener('input', ()=>{ state.observaciones = txt.value; });
-    txt.addEventListener('blur', ()=>{ saveMatch(); });
-  }
-
-  // ---------- Resumen ----------
-  function renderResumen({awayName, homeScore, awayScore, esLocal, roster, subs, cards, goals, rivalGoals, observaciones, archivedLabel, showArchiveBtn}){
-    roster = roster || [];
-    const salidas = {}, entradas = {};
-    subs.forEach(s=>{ salidas[s.sale] = s; entradas[s.entra] = s; });
-    const titulares = roster.slice(0,11);
-    const suplentes = roster.slice(11,18);
-    const noConvocados = roster.slice(18);
-    const groups = VENTANAS.map(v=>({...v, items: subs.filter(s=>s.ventana===v.key).sort((a,b)=>Number(a.minuto)-Number(b.minuto))})).filter(g=>g.items.length>0);
-    const sortedCards = [...cards].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
-    const sortedGoals = [...goals].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
-    const sortedRival = [...rivalGoals].sort((a,b)=>Number(a.minuto)-Number(b.minuto));
-    const leftName = esLocal? HOME_NAME : awayName;
-    const rightName = esLocal? awayName : HOME_NAME;
-    const leftScore = esLocal? homeScore : awayScore;
-    const rightScore = esLocal? awayScore : homeScore;
-
-    return `
-    <div>
-      <div class="resumen-header">
-        <button class="back-btn" id="resumen-back">←</button>
-        <span class="resumen-title">Resumen del partido</span>
-      </div>
-      <div class="resumen-body">
-        ${archivedLabel? `<p class="archive-label">${esc(archivedLabel)}</p>`:''}
-        <div class="score-card">
-          <div class="label">Resultado final</div>
-          <div class="row">
-            <span class="side">${esc(leftName)}</span>
-            <span class="score-num amber">${leftScore}</span>
-            <span class="score-dash">–</span>
-            <span class="score-num chalk">${rightScore}</span>
-            <span class="side">${esc(rightName)}</span>
-          </div>
-          <div class="sublabel">${esc(HOME_NAME)} juega como ${esLocal?'local':'visitante'}</div>
-        </div>
-
-        <div class="section">
-          <h3>Alineación</h3>
-          ${roster.length===0? `<p class="empty-line">Sin alineación registrada.</p>` : `
-            <div class="list-box">
-              ${titulares.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}
-              ${suplentes.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;">${suplentes.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
-              ${noConvocados.length>0? `<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;opacity:.6;">${noConvocados.map(p=>renderPlayerLine(p, salidas, roster, true, entradas)).join('')}</div>` : ''}
-            </div>
-          `}
-        </div>
-
-        <div class="section">
-          <h3>Cambios</h3>
-          ${groups.length===0? `<p class="empty-line">Sin cambios registrados.</p>` : `
-            <div class="group-box">
-              ${groups.map((g,gi)=>`
-                <div style="${gi>0?'border-top:1px solid var(--border)':''}">
-                  <div class="g-head" style="background:${g.soft}"><span style="color:${g.color}">${g.label}</span></div>
-                  <div class="g-body">
-                    ${g.items.map(s=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${s.minuto}'</span><span style="color:var(--green-ok)">↑${s.entra}</span> <span style="color:var(--red)">↓${s.sale}</span></div>`).join('')}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-
-        <div class="section">
-          <h3>Tarjetas</h3>
-          ${sortedCards.length===0? `<p class="empty-line">Sin tarjetas registradas.</p>` : `
-            <div class="list-box">
-              ${sortedCards.map(c=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${c.minuto}'</span>${cardChip(c.tipo)} Nº ${c.dorsal} <span style="font-weight:400;opacity:.5">· ${tipoLabel(c.tipo)}</span></div>`).join('')}
-            </div>
-          `}
-        </div>
-
-        <div class="section">
-          <h3>Goles ${esc(HOME_NAME)}</h3>
-          ${sortedGoals.length===0? `<p class="empty-line">Sin goles registrados.</p>` : `
-            <div class="list-box">
-              ${sortedGoals.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${g.minuto}'</span>⚽ Nº ${g.dorsal}</div>`).join('')}
-            </div>
-          `}
-        </div>
-
-        <div class="section">
-          <h3>Goles ${esc(awayName)}</h3>
-          ${sortedRival.length===0? `<p class="empty-line">Sin goles registrados.</p>` : `
-            <div class="list-box">
-              ${sortedRival.map(g=>`<div><span style="font-family:monospace;opacity:.6;margin-right:6px;">${g.minuto}'</span>Gol ${esc(awayName)}</div>`).join('')}
-            </div>
-          `}
-        </div>
-
-        <div class="section">
-          <h3>Observaciones</h3>
-          ${(!observaciones || observaciones.trim()==='')? `<p class="empty-line">Sin observaciones.</p>` : `
-            <div class="list-box"><div style="white-space:pre-wrap;">${esc(observaciones)}</div></div>
-          `}
-        </div>
-
-        ${showArchiveBtn? `<button class="archive-btn" id="btn-archive-match">🗂 Archivar partido</button>`:''}
-      </div>
-    </div>`;
-  }
-  function attachResumenEvents(isLive){
-    document.getElementById('resumen-back').addEventListener('click', ()=>{
-      state.view = isLive ? 'match' : 'archivo';
-      render();
-    });
-    const archiveBtn = document.getElementById('btn-archive-match');
-    if(archiveBtn){
-      archiveBtn.addEventListener('click', ()=>{
-        const nowIso = new Date().toISOString();
-        state.archivedMatches.push({
-          id: uid(), date: nowIso, dateLabel: formatDateLabel(nowIso),
-          awayName: state.awayName, esLocal: state.esLocal, roster: state.roster, observaciones: state.observaciones,
-          homeScore: state.goals.length, awayScore: state.rivalGoals.length,
-          subs: state.subs, cards: state.cards, goals: state.goals, rivalGoals: state.rivalGoals,
-        });
-        saveArchive();
-        // guarda en la plantilla el orden y los datos finales de este partido
-        const rosterIds = new Set(state.roster.map(p=>p.id));
-        const reordered = state.roster.map(p=>({ id:p.id, numero:p.numero, nombre:p.nombre }));
-        const missing = state.plantilla.filter(pl=>!rosterIds.has(pl.id));
-        state.plantilla = [...reordered, ...missing];
-        savePlantilla();
-        state.awayName = 'Rival'; state.esLocal = true; state.roster = []; state.observaciones = '';
-        state.subs = []; state.cards = []; state.goals = []; state.rivalGoals = [];
-        seedRosterFromPlantilla();
-        saveMatch();
-        state.tab = 'alineacion';
-        state.view = 'match';
-        render();
-      });
-    }
-  }
-
-  // ---------- Archivo ----------
-  function renderArchivoView(){
-    return `
-    <div>
-      <div class="resumen-header">
-        <button class="back-btn" id="archivo-back">←</button>
-        <span class="resumen-title">Partidos guardados</span>
-      </div>
-      <div class="resumen-body">
-        ${state.archivedMatches.length===0? `<div class="empty">Todavía no has archivado ningún partido.</div>` : `
-          ${[...state.archivedMatches].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(m=>{
-            const eL = m.esLocal ?? true;
-            const line = eL
-              ? `${esc(HOME_NAME)} ${m.homeScore} – ${m.awayScore} ${esc(m.awayName)}`
-              : `${esc(m.awayName)} ${m.awayScore} – ${m.homeScore} ${esc(HOME_NAME)}`;
-            return `
-            <button class="archivo-item" data-open="${m.id}">
-              <div>
-                <div class="main">${line}</div>
-                <div class="sub">${esc(m.dateLabel)}</div>
-              </div>
-              <span style="opacity:.4;">›</span>
-            </button>`;
-          }).join('')}
-        `}
-      </div>
-    </div>`;
-  }
-  function attachArchivoEvents(){
-    document.getElementById('archivo-back').addEventListener('click', ()=>{ state.view='match'; render(); });
-    document.querySelectorAll('[data-open]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{ state.openArchiveId = btn.dataset.open; state.view='archivo-detalle'; render(); });
-    });
-  }
-
-  loadState();
-  render();
-})();
-</script>
-</body>
-</html>
+```
